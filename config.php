@@ -19,8 +19,8 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 // System Security Configuration
-// Change this PIN to your secret 4-6 digit passcode before deploying to remote.sandslab.com
-define('SECURITY_PIN', '1234'); 
+// Secret PIN passcode
+define('SECURITY_PIN', '9080'); 
 define('APP_NAME', 'SandS CamGuard Remote');
 define('DATA_DIR', __DIR__ . '/data');
 define('PEER_DATA_FILE', DATA_DIR . '/peer_status.json');
