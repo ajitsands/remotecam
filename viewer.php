@@ -41,6 +41,15 @@ requireAuth();
         <div class="dashboard-grid">
             <!-- Video Player Stage -->
             <div>
+                <!-- Peer ID Connection Bar -->
+                <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 12px; background: rgba(0,0,0,0.4); padding: 8px 12px; border-radius: var(--radius-md); border: 1px solid var(--border-color); flex-wrap: wrap;">
+                    <label style="font-size: 0.8rem; color: var(--text-muted); white-space: nowrap;"><i class="fa-solid fa-key"></i> Peer ID:</label>
+                    <input type="text" id="manualPeerId" class="pin-input" style="flex: 1; min-width: 140px; padding: 6px 10px; font-size: 0.85rem; text-align: left; letter-spacing: normal;" placeholder="sands_office_laptop">
+                    <button onclick="connectManualPeer()" class="btn btn-primary" style="padding: 6px 14px; font-size: 0.82rem; white-space: nowrap;">
+                        <i class="fa-solid fa-plug"></i> Connect Stream
+                    </button>
+                </div>
+
                 <div class="video-stage-container">
                     <video id="remoteVideo" autoplay playsinline webkit-playsinline muted onclick="this.play()" style="display: none;"></video>
                     <img id="fallbackLiveStream" src="" alt="Live Stream Feed" style="width: 100%; height: 100%; object-fit: cover; display: none;" />

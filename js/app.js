@@ -66,8 +66,8 @@ async function startOfficeCamera() {
 
         videoElement.srcObject = localStream;
 
-        // 2. Init PeerJS
-        const peerId = 'sands_cam_' + Math.random().toString(36).substring(2, 9);
+        // 2. Init PeerJS with predictable camera ID
+        const peerId = 'sands_office_laptop';
         await initPeerJS(peerId);
 
         peerIdDisplay.textContent = peerId;
@@ -260,6 +260,11 @@ async function startRemoteViewer() {
             const res = await fetch('api.php?action=get_peer');
             const data = await res.json();
 
+            const input = document.getElementById('manualPeerId');
+            if (input && !input.value) {
+                input.value = (data && data.peer_id) ? data.peer_id : 'sands_office_laptop';
+            }
+
             if (data.status === 'online' && data.peer_id) {
                 deviceBadge.textContent = data.device_info + ' (Last seen ' + data.last_seen_seconds_ago + 's ago)';
                 
@@ -282,6 +287,16 @@ async function startRemoteViewer() {
     setInterval(checkAndConnect, 10000);
     loadEventLogs();
     setInterval(loadEventLogs, 10000);
+}
+
+function connectManualPeer() {
+    const input = document.getElementById('manualPeerId');
+    const targetId = (input && input.value.trim()) ? input.value.trim() : 'sands_office_laptop';
+    const videoElement = document.getElementById('remoteVideo');
+    const statusBadge = document.getElementById('viewerStatus');
+
+    console.log('Connecting to Peer ID:', targetId);
+    connectToOfficeCamera(targetId, videoElement, statusBadge);
 }
 
 // HTTP Live Stream Relay Fallback (Fetches JSON base64 frame)
