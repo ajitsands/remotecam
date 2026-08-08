@@ -4,9 +4,18 @@
  * Remote Webcam Monitoring System
  */
 
+// Set custom session save path to prevent cPanel alt-php session path permission warnings
+$sessionSavePath = __DIR__ . '/data/sessions';
+if (!file_exists($sessionSavePath)) {
+    @mkdir($sessionSavePath, 0755, true);
+}
+if (is_dir($sessionSavePath) && is_writable($sessionSavePath)) {
+    @session_save_path($sessionSavePath);
+}
+
 // Start session if not already started
 if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+    @session_start();
 }
 
 // System Security Configuration
