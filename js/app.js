@@ -293,23 +293,21 @@ function startFallbackStream() {
 
     if (fallbackInterval) clearInterval(fallbackInterval);
 
+    // Immediately show live image relay container
+    img.style.display = 'block';
+    if (video) video.style.display = 'none';
+
     fallbackInterval = setInterval(() => {
         if (isWebRTCConnected) return;
 
         const timestamp = Date.now();
-        const testImg = new Image();
-        testImg.onload = () => {
-            if (isWebRTCConnected) return;
-            img.src = 'api.php?action=get_frame&t=' + timestamp;
-            img.style.display = 'block';
-            if (video) video.style.display = 'none';
-            if (statusBadge && (statusBadge.textContent.includes('Connecting') || statusBadge.textContent.includes('Offline'))) {
-                statusBadge.className = 'status-badge status-online';
-                statusBadge.innerHTML = '<span class="dot-pulse"></span> LIVE Feed (HTTPS Relay)';
-            }
-        };
-        testImg.src = 'api.php?action=get_frame&t=' + timestamp;
-    }, 350);
+        img.src = 'api.php?action=get_frame&t=' + timestamp;
+
+        if (statusBadge && !isWebRTCConnected) {
+            statusBadge.className = 'status-badge status-online';
+            statusBadge.innerHTML = '<span class="dot-pulse"></span> LIVE Feed (HTTPS Relay)';
+        }
+    }, 400);
 }
 
 function handleIncomingStream(call, videoElement, statusBadge) {

@@ -26,6 +26,26 @@ if ($action === 'logout') {
     jsonResponse(['status' => 'success', 'message' => 'Logged out successfully']);
 }
 
+// Public get_frame endpoint (for img tag loading)
+if ($action === 'get_frame') {
+    $frameFile = DATA_DIR . '/live_frame.jpg';
+    $timeFile = DATA_DIR . '/frame_time.txt';
+
+    if (file_exists($frameFile) && file_exists($timeFile)) {
+        $lastFrameTime = (int)file_get_contents($timeFile);
+        if ((time() - $lastFrameTime) <= 60) {
+            header('Content-Type: image/jpeg');
+            header('Cache-Control: no-cache, no-store, must-revalidate');
+            header('Pragma: no-cache');
+            header('Expires: 0');
+            readfile($frameFile);
+            exit;
+        }
+    }
+    http_response_code(404);
+    exit;
+}
+
 // All actions below require authentication
 requireAuth();
 
@@ -39,31 +59,15 @@ if ($action === 'push_frame') {
         }
         $decoded = base64_decode($frameData);
         if ($decoded !== false) {
+            if (!file_exists(DATA_DIR)) {
+                @mkdir(DATA_DIR, 0755, true);
+            }
             file_put_contents(DATA_DIR . '/live_frame.jpg', $decoded);
             file_put_contents(DATA_DIR . '/frame_time.txt', time());
             jsonResponse(['status' => 'success']);
         }
     }
     jsonResponse(['status' => 'error', 'message' => 'Invalid frame'], 400);
-}
-
-if ($action === 'get_frame') {
-    $frameFile = DATA_DIR . '/live_frame.jpg';
-    $timeFile = DATA_DIR . '/frame_time.txt';
-
-    if (file_exists($frameFile) && file_exists($timeFile)) {
-        $lastFrameTime = (int)file_get_contents($timeFile);
-        if ((time() - $lastFrameTime) <= 10) {
-            header('Content-Type: image/jpeg');
-            header('Cache-Control: no-cache, no-store, must-revalidate');
-            header('Pragma: no-cache');
-            header('Expires: 0');
-            readfile($frameFile);
-            exit;
-        }
-    }
-    http_response_code(404);
-    exit;
 }
 
 // 1. Register Camera Peer ID (Heartbeat from Office Laptop)
