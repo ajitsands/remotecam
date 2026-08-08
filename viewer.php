@@ -42,7 +42,7 @@ requireAuth();
             <!-- Video Player Stage -->
             <div>
                 <div class="video-stage-container">
-                    <video id="remoteVideo" autoplay playsinline></video>
+                    <video id="remoteVideo" autoplay playsinline webkit-playsinline muted onclick="this.play()"></video>
                     
                     <div class="video-overlay-controls">
                         <button onclick="toggleAudioMute()" id="audioBtn" class="btn btn-secondary" style="padding: 8px 14px; font-size: 0.85rem;" title="Mute/Unmute Audio">

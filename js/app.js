@@ -14,14 +14,18 @@ let isMotionDetectionActive = false;
 // Initialize PeerJS Client
 function initPeerJS(customId = null) {
     return new Promise((resolve, reject) => {
-        // Options for PeerJS connection using public server
+        // Options for PeerJS connection using public STUN servers
         const peerOptions = {
             debug: 1,
             config: {
                 iceServers: [
                     { urls: 'stun:stun.l.google.com:19302' },
                     { urls: 'stun:stun1.l.google.com:19302' },
-                    { urls: 'stun:stun2.l.google.com:19302' }
+                    { urls: 'stun:stun2.l.google.com:19302' },
+                    { urls: 'stun:stun3.l.google.com:19302' },
+                    { urls: 'stun:stun4.l.google.com:19302' },
+                    { urls: 'stun:stun.services.mozilla.com' },
+                    { urls: 'stun:global.stun.twilio.com:3478' }
                 ]
             }
         };
@@ -72,9 +76,22 @@ async function startOfficeCamera() {
         registerCameraHeartbeat(peerId);
         heartbeatInterval = setInterval(() => registerCameraHeartbeat(peerId), 10000);
 
-        // 4. Listen for incoming WebRTC video calls from Remote Viewer
+        // 4. Listen for incoming data connections & calls from Remote Viewer
+        peer.on('connection', (conn) => {
+            console.log('Incoming viewer data connection...');
+            conn.on('data', (data) => {
+                if (data && data.type === 'REQUEST_STREAM' && data.viewerId) {
+                    console.log('Calling viewer back:', data.viewerId);
+                    if (localStream) {
+                        const call = peer.call(data.viewerId, localStream);
+                        currentCall = call;
+                    }
+                }
+            });
+        });
+
         peer.on('call', (call) => {
-            console.log('Incoming remote viewer call...');
+            console.log('Incoming remote viewer direct call...');
             call.answer(localStream); // Answer call with local webcam stream
             currentCall = call;
         });
@@ -201,6 +218,14 @@ async function startRemoteViewer() {
     // 1. Init PeerJS for Viewer
     await initPeerJS();
 
+    // Listen for incoming calls back from camera host
+    peer.on('call', (call) => {
+        console.log('Receiving call back from camera host...');
+        currentCall = call;
+        call.answer(); // Answer without sending local stream
+        handleIncomingStream(call, videoElement, statusBadge);
+    });
+
     // 2. Poll API for active office camera peer ID
     async function checkAndConnect() {
         try {
@@ -229,21 +254,23 @@ async function startRemoteViewer() {
     setInterval(loadEventLogs, 10000);
 }
 
-function connectToOfficeCamera(officePeerId, videoElement, statusBadge) {
-    statusBadge.className = 'status-badge status-connecting';
-    statusBadge.innerHTML = '<span class="dot-pulse"></span> Connecting Stream...';
-
-    // Request stream from office camera
-    const call = peer.call(officePeerId, new MediaStream());
-    currentCall = call;
-
+function handleIncomingStream(call, videoElement, statusBadge) {
     call.on('stream', (remoteStream) => {
         console.log('Receiving remote office webcam stream...');
         videoElement.srcObject = remoteStream;
-        videoElement.play();
-
-        statusBadge.className = 'status-badge status-online';
-        statusBadge.innerHTML = '<span class="dot-pulse"></span> LIVE WebRTC Feed';
+        videoElement.muted = true;
+        
+        const playPromise = videoElement.play();
+        if (playPromise !== undefined) {
+            playPromise.then(() => {
+                statusBadge.className = 'status-badge status-online';
+                statusBadge.innerHTML = '<span class="dot-pulse"></span> LIVE WebRTC Feed';
+            }).catch(err => {
+                console.warn('Autoplay prevented:', err);
+                statusBadge.className = 'status-badge status-online';
+                statusBadge.innerHTML = '<span class="dot-pulse"></span> Live Stream Ready (Tap Video)';
+            });
+        }
     });
 
     call.on('close', () => {
@@ -256,6 +283,34 @@ function connectToOfficeCamera(officePeerId, videoElement, statusBadge) {
         statusBadge.className = 'status-badge status-offline';
         statusBadge.innerHTML = 'Connection Failed';
     });
+}
+
+function connectToOfficeCamera(officePeerId, videoElement, statusBadge) {
+    statusBadge.className = 'status-badge status-connecting';
+    statusBadge.innerHTML = '<span class="dot-pulse"></span> Connecting Stream...';
+
+    // 1. DataConnection Handshake
+    try {
+        const conn = peer.connect(officePeerId);
+        conn.on('open', () => {
+            console.log('Sending REQUEST_STREAM to camera host...');
+            conn.send({ type: 'REQUEST_STREAM', viewerId: peer.id });
+        });
+    } catch (e) {
+        console.warn('Data connection failed, falling back to direct call:', e);
+    }
+
+    // 2. Direct Call Fallback
+    setTimeout(() => {
+        if (!currentCall || !currentCall.open) {
+            console.log('Triggering direct peer.call fallback...');
+            const call = peer.call(officePeerId);
+            if (call) {
+                currentCall = call;
+                handleIncomingStream(call, videoElement, statusBadge);
+            }
+        }
+    }, 2500);
 }
 
 // Remote Snapshot Downloader
