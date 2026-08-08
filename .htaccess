@@ -1,0 +1,14 @@
+# Apache Server Configuration
+# SandS CamGuard Security Settings
+
+# Disable Directory Indexing
+Options -Indexes
+
+# Protect sensitive data files from direct HTTP viewing
+<FilesMatch "^(peer_status|motion_logs)\.json$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Allow main PHP entry points
+DirectoryIndex index.php
