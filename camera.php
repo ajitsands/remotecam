@@ -8,7 +8,7 @@ requireAuth();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= APP_NAME ?> - Office Camera Host</title>
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/style.css?v=<?= time() ?>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- PeerJS CDN -->
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
@@ -93,7 +93,7 @@ requireAuth();
         </div>
     </main>
 
-    <script src="js/app.js"></script>
+    <script src="js/app.js?v=<?= time() ?>"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             startOfficeCamera();
