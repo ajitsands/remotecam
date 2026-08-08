@@ -42,7 +42,8 @@ requireAuth();
             <!-- Video Player Stage -->
             <div>
                 <div class="video-stage-container">
-                    <video id="remoteVideo" autoplay playsinline webkit-playsinline muted onclick="this.play()"></video>
+                    <video id="remoteVideo" autoplay playsinline webkit-playsinline muted onclick="this.play()" style="display: none;"></video>
+                    <img id="fallbackLiveStream" src="" alt="Live Stream Feed" style="width: 100%; height: 100%; object-fit: cover; display: none;" />
                     
                     <div class="video-overlay-controls">
                         <button onclick="toggleAudioMute()" id="audioBtn" class="btn btn-secondary" style="padding: 8px 14px; font-size: 0.85rem;" title="Mute/Unmute Audio">

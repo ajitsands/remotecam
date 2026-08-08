@@ -29,6 +29,43 @@ if ($action === 'logout') {
 // All actions below require authentication
 requireAuth();
 
+// 0. Live Frame Relay (HTTP Live Stream Fallback for strict firewalls/NATs)
+if ($action === 'push_frame') {
+    $input = json_decode(file_get_contents('php://input'), true);
+    if (!empty($input['frame'])) {
+        $frameData = $input['frame'];
+        if (preg_match('/^data:image\/(\w+);base64,/', $frameData, $type)) {
+            $frameData = substr($frameData, strpos($frameData, ',') + 1);
+        }
+        $decoded = base64_decode($frameData);
+        if ($decoded !== false) {
+            file_put_contents(DATA_DIR . '/live_frame.jpg', $decoded);
+            file_put_contents(DATA_DIR . '/frame_time.txt', time());
+            jsonResponse(['status' => 'success']);
+        }
+    }
+    jsonResponse(['status' => 'error', 'message' => 'Invalid frame'], 400);
+}
+
+if ($action === 'get_frame') {
+    $frameFile = DATA_DIR . '/live_frame.jpg';
+    $timeFile = DATA_DIR . '/frame_time.txt';
+
+    if (file_exists($frameFile) && file_exists($timeFile)) {
+        $lastFrameTime = (int)file_get_contents($timeFile);
+        if ((time() - $lastFrameTime) <= 10) {
+            header('Content-Type: image/jpeg');
+            header('Cache-Control: no-cache, no-store, must-revalidate');
+            header('Pragma: no-cache');
+            header('Expires: 0');
+            readfile($frameFile);
+            exit;
+        }
+    }
+    http_response_code(404);
+    exit;
+}
+
 // 1. Register Camera Peer ID (Heartbeat from Office Laptop)
 if ($action === 'register_peer') {
     $input = json_decode(file_get_contents('php://input'), true);

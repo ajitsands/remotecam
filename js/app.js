@@ -10,6 +10,8 @@ let motionInterval = null;
 let lastFrameData = null;
 let motionSensitivity = 20; // Lower = more sensitive
 let isMotionDetectionActive = false;
+let isWebRTCConnected = false;
+let fallbackInterval = null;
 
 // Initialize PeerJS Client
 function initPeerJS(customId = null) {
@@ -96,8 +98,9 @@ async function startOfficeCamera() {
             currentCall = call;
         });
 
-        // 5. Start Motion Detection
+        // 5. Start Motion Detection & HTTP Frame Streamer
         startMotionDetection(videoElement);
+        startFramePusher(videoElement);
 
     } catch (err) {
         console.error('Camera Access Error:', err);
@@ -105,6 +108,28 @@ async function startOfficeCamera() {
         statusBadge.innerHTML = 'Camera Error: ' + err.message;
         alert('Could not access webcam. Please ensure HTTPS and browser permissions are granted.');
     }
+}
+
+// HTTP Frame Streamer (Reliable live JPEG stream over HTTPS API)
+function startFramePusher(videoElement) {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = 480;
+    canvas.height = 270;
+
+    setInterval(async () => {
+        if (videoElement.paused || videoElement.ended || !localStream) return;
+        ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+        const frameBase64 = canvas.toDataURL('image/jpeg', 0.5);
+
+        try {
+            await fetch('api.php?action=push_frame', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ frame: frameBase64 })
+            });
+        } catch (e) {}
+    }, 300);
 }
 
 // Register Peer Heartbeat via PHP API
@@ -215,6 +240,9 @@ async function startRemoteViewer() {
     statusBadge.className = 'status-badge status-connecting';
     statusBadge.innerHTML = '<span class="dot-pulse"></span> Locating Office Camera...';
 
+    // Start instant HTTP live stream fallback
+    startFallbackStream();
+
     // 1. Init PeerJS for Viewer
     await initPeerJS();
 
@@ -239,9 +267,11 @@ async function startRemoteViewer() {
                     connectToOfficeCamera(data.peer_id, videoElement, statusBadge);
                 }
             } else {
-                statusBadge.className = 'status-badge status-offline';
-                statusBadge.innerHTML = 'Office Laptop Offline / Camera Closed';
-                deviceBadge.textContent = 'Waiting for laptop...';
+                if (!isWebRTCConnected) {
+                    statusBadge.className = 'status-badge status-offline';
+                    statusBadge.innerHTML = 'Office Laptop Offline / Camera Closed';
+                    deviceBadge.textContent = 'Waiting for laptop...';
+                }
             }
         } catch (err) {
             console.error('Fetch peer error:', err);
@@ -254,9 +284,42 @@ async function startRemoteViewer() {
     setInterval(loadEventLogs, 10000);
 }
 
+// HTTP Live Stream Relay Fallback
+function startFallbackStream() {
+    const img = document.getElementById('fallbackLiveStream');
+    const video = document.getElementById('remoteVideo');
+    const statusBadge = document.getElementById('viewerStatus');
+    if (!img) return;
+
+    if (fallbackInterval) clearInterval(fallbackInterval);
+
+    fallbackInterval = setInterval(() => {
+        if (isWebRTCConnected) return;
+
+        const timestamp = Date.now();
+        const testImg = new Image();
+        testImg.onload = () => {
+            if (isWebRTCConnected) return;
+            img.src = 'api.php?action=get_frame&t=' + timestamp;
+            img.style.display = 'block';
+            if (video) video.style.display = 'none';
+            if (statusBadge && (statusBadge.textContent.includes('Connecting') || statusBadge.textContent.includes('Offline'))) {
+                statusBadge.className = 'status-badge status-online';
+                statusBadge.innerHTML = '<span class="dot-pulse"></span> LIVE Feed (HTTPS Relay)';
+            }
+        };
+        testImg.src = 'api.php?action=get_frame&t=' + timestamp;
+    }, 350);
+}
+
 function handleIncomingStream(call, videoElement, statusBadge) {
     call.on('stream', (remoteStream) => {
-        console.log('Receiving remote office webcam stream...');
+        console.log('Receiving remote office webcam stream via WebRTC...');
+        isWebRTCConnected = true;
+
+        const img = document.getElementById('fallbackLiveStream');
+        if (img) img.style.display = 'none';
+        videoElement.style.display = 'block';
         videoElement.srcObject = remoteStream;
         videoElement.muted = true;
         
@@ -274,20 +337,20 @@ function handleIncomingStream(call, videoElement, statusBadge) {
     });
 
     call.on('close', () => {
-        statusBadge.className = 'status-badge status-offline';
-        statusBadge.innerHTML = 'Stream Disconnected';
+        isWebRTCConnected = false;
     });
 
     call.on('error', (err) => {
         console.error('Call error:', err);
-        statusBadge.className = 'status-badge status-offline';
-        statusBadge.innerHTML = 'Connection Failed';
+        isWebRTCConnected = false;
     });
 }
 
 function connectToOfficeCamera(officePeerId, videoElement, statusBadge) {
-    statusBadge.className = 'status-badge status-connecting';
-    statusBadge.innerHTML = '<span class="dot-pulse"></span> Connecting Stream...';
+    if (!isWebRTCConnected) {
+        statusBadge.className = 'status-badge status-connecting';
+        statusBadge.innerHTML = '<span class="dot-pulse"></span> Connecting Stream...';
+    }
 
     // 1. DataConnection Handshake
     try {
@@ -316,16 +379,23 @@ function connectToOfficeCamera(officePeerId, videoElement, statusBadge) {
 // Remote Snapshot Downloader
 function captureRemoteSnapshot() {
     const video = document.getElementById('remoteVideo');
-    if (!video || !video.srcObject) {
+    const fallbackImg = document.getElementById('fallbackLiveStream');
+
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    if (isWebRTCConnected && video && video.srcObject) {
+        canvas.width = video.videoWidth || 1280;
+        canvas.height = video.videoHeight || 720;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    } else if (fallbackImg && fallbackImg.naturalWidth) {
+        canvas.width = fallbackImg.naturalWidth || 640;
+        canvas.height = fallbackImg.naturalHeight || 360;
+        ctx.drawImage(fallbackImg, 0, 0, canvas.width, canvas.height);
+    } else {
         alert('No live stream available to capture snapshot.');
         return;
     }
-
-    const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth || 1280;
-    canvas.height = video.videoHeight || 720;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
     const link = document.createElement('a');
     link.download = 'office_snapshot_' + new Date().toISOString().slice(0, 19).replace(/[:T]/g, '_') + '.jpg';
