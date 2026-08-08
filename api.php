@@ -26,48 +26,47 @@ if ($action === 'logout') {
     jsonResponse(['status' => 'success', 'message' => 'Logged out successfully']);
 }
 
-// Public get_frame endpoint (for img tag loading)
+// Public get_frame endpoint (JSON base64 format for 100% reliable mobile display)
 if ($action === 'get_frame') {
-    $frameFile = DATA_DIR . '/live_frame.jpg';
-    $timeFile = DATA_DIR . '/frame_time.txt';
+    $frameFile = DATA_DIR . '/live_frame.json';
 
-    if (file_exists($frameFile) && file_exists($timeFile)) {
-        $lastFrameTime = (int)file_get_contents($timeFile);
-        if ((time() - $lastFrameTime) <= 60) {
-            header('Content-Type: image/jpeg');
-            header('Cache-Control: no-cache, no-store, must-revalidate');
-            header('Pragma: no-cache');
-            header('Expires: 0');
-            readfile($frameFile);
-            exit;
+    if (file_exists($frameFile)) {
+        $content = @file_get_contents($frameFile);
+        $data = @json_decode($content, true);
+
+        if ($data && !empty($data['frame'])) {
+            $timeDiff = time() - ($data['timestamp'] ?? 0);
+            if ($timeDiff <= 60) {
+                jsonResponse([
+                    'status' => 'success',
+                    'frame' => $data['frame'],
+                    'seconds_ago' => $timeDiff
+                ]);
+            }
         }
     }
-    http_response_code(404);
-    exit;
+    jsonResponse(['status' => 'offline', 'message' => 'No active live frame available'], 404);
 }
 
 // All actions below require authentication
 requireAuth();
 
-// 0. Live Frame Relay (HTTP Live Stream Fallback for strict firewalls/NATs)
+// 0. Live Frame Relay (JSON Base64 format matching working motion log format)
 if ($action === 'push_frame') {
     $input = json_decode(file_get_contents('php://input'), true);
     if (!empty($input['frame'])) {
-        $frameData = $input['frame'];
-        if (preg_match('/^data:image\/(\w+);base64,/', $frameData, $type)) {
-            $frameData = substr($frameData, strpos($frameData, ',') + 1);
+        if (!file_exists(DATA_DIR)) {
+            @mkdir(DATA_DIR, 0755, true);
         }
-        $decoded = base64_decode($frameData);
-        if ($decoded !== false) {
-            if (!file_exists(DATA_DIR)) {
-                @mkdir(DATA_DIR, 0755, true);
-            }
-            file_put_contents(DATA_DIR . '/live_frame.jpg', $decoded);
-            file_put_contents(DATA_DIR . '/frame_time.txt', time());
-            jsonResponse(['status' => 'success']);
-        }
+        $payload = [
+            'frame' => $input['frame'],
+            'timestamp' => time(),
+            'formatted_time' => date('Y-m-d H:i:s')
+        ];
+        file_put_contents(DATA_DIR . '/live_frame.json', json_encode($payload));
+        jsonResponse(['status' => 'success']);
     }
-    jsonResponse(['status' => 'error', 'message' => 'Invalid frame'], 400);
+    jsonResponse(['status' => 'error', 'message' => 'Invalid frame data'], 400);
 }
 
 // 1. Register Camera Peer ID (Heartbeat from Office Laptop)

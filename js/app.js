@@ -284,7 +284,7 @@ async function startRemoteViewer() {
     setInterval(loadEventLogs, 10000);
 }
 
-// HTTP Live Stream Relay Fallback
+// HTTP Live Stream Relay Fallback (Fetches JSON base64 frame)
 function startFallbackStream() {
     const img = document.getElementById('fallbackLiveStream');
     const video = document.getElementById('remoteVideo');
@@ -293,20 +293,24 @@ function startFallbackStream() {
 
     if (fallbackInterval) clearInterval(fallbackInterval);
 
-    // Immediately show live image relay container
-    img.style.display = 'block';
-    if (video) video.style.display = 'none';
-
-    fallbackInterval = setInterval(() => {
+    fallbackInterval = setInterval(async () => {
         if (isWebRTCConnected) return;
 
-        const timestamp = Date.now();
-        img.src = 'api.php?action=get_frame&t=' + timestamp;
+        try {
+            const res = await fetch('api.php?action=get_frame&t=' + Date.now());
+            const data = await res.json();
 
-        if (statusBadge && !isWebRTCConnected) {
-            statusBadge.className = 'status-badge status-online';
-            statusBadge.innerHTML = '<span class="dot-pulse"></span> LIVE Feed (HTTPS Relay)';
-        }
+            if (data.status === 'success' && data.frame) {
+                img.src = data.frame;
+                img.style.display = 'block';
+                if (video) video.style.display = 'none';
+
+                if (statusBadge && !isWebRTCConnected) {
+                    statusBadge.className = 'status-badge status-online';
+                    statusBadge.innerHTML = '<span class="dot-pulse"></span> LIVE Feed (HTTPS Relay)';
+                }
+            }
+        } catch (e) {}
     }, 400);
 }
 
