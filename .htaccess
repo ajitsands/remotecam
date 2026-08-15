@@ -5,10 +5,18 @@
 Options -Indexes
 
 # Protect sensitive data files from direct HTTP viewing
-<FilesMatch "^(peer_status|motion_logs)\.json$">
+# (JSON state files, session data, security logs)
+<FilesMatch "\.(json|log|txt)$">
     Order allow,deny
     Deny from all
 </FilesMatch>
 
 # Allow main PHP entry points
 DirectoryIndex index.php
+
+# Optional: force HTTPS (uncomment after TLS certificate is configured on remote.sandslab.com)
+# <IfModule mod_rewrite.c>
+#     RewriteEngine On
+#     RewriteCond %{HTTPS} off
+#     RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+# </IfModule>

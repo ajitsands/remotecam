@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/config.php';
+sendSecurityHeaders();
 requireAuth();
 ?>
 <!DOCTYPE html>
@@ -8,10 +9,11 @@ requireAuth();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= APP_NAME ?> - Live Remote Viewer</title>
-    <link rel="stylesheet" href="css/style.css?v=<?= time() ?>">
+    <link rel="stylesheet" href="css/style.css?v=<?= APP_VERSION ?>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- PeerJS CDN -->
-    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <!-- PeerJS: local copy first, CDN fallback for resilience -->
+    <script src="js/vendor/peerjs.min.js"></script>
+    <script>window.Peer || document.write('<script src="https:\/\/unpkg.com\/peerjs@1.5.2\/dist\/peerjs.min.js"><\/script>');</script>
 </head>
 <body>
 
@@ -98,43 +100,9 @@ requireAuth();
         </div>
     </div>
 
-    <script src="js/app.js?v=<?= time() ?>"></script>
+    <script src="js/app.js?v=<?= APP_VERSION ?>"></script>
     <script>
-        let isMuted = true;
-        document.addEventListener('DOMContentLoaded', () => {
-            const video = document.getElementById('remoteVideo');
-            video.muted = true; // start muted for autoplay policy
-            startRemoteViewer();
-        });
-
-        function toggleAudioMute() {
-            const video = document.getElementById('remoteVideo');
-            const btn = document.getElementById('audioBtn');
-            isMuted = !isMuted;
-            video.muted = isMuted;
-
-            if (isMuted) {
-                btn.innerHTML = '<i class="fa-solid fa-volume-xmark"></i> Sound Off';
-            } else {
-                btn.innerHTML = '<i class="fa-solid fa-volume-high"></i> Live Audio ON';
-            }
-        }
-
-        function toggleFullscreen() {
-            const container = document.querySelector('.video-stage-container');
-            if (!document.fullscreenElement) {
-                container.requestFullscreen().catch(err => alert(err.message));
-            } else {
-                document.exitFullscreen();
-            }
-        }
-
-        async function clearLogs() {
-            if (confirm('Clear all motion logs?')) {
-                await fetch('api.php?action=clear_logs');
-                loadEventLogs();
-            }
-        }
+        document.addEventListener('DOMContentLoaded', () => startRemoteViewer());
     </script>
 </body>
 </html>

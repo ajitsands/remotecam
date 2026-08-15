@@ -17,15 +17,17 @@ if ($action === 'login') {
         jsonResponse(['status' => 'error', 'message' => 'Too many failed attempts. Please wait 5 minutes before trying again.'], 429);
     }
 
-    if ((string) $pin === (string) SECURITY_PIN) {
+    if (is_string($pin) && hash_equals(SECURITY_PIN, $pin)) {
         $_SESSION['authenticated'] = true;
         $_SESSION['last_activity'] = time();
         $_SESSION['login_attempts'] = [];
         session_regenerate_id(true);
+        auditSecurityLog('AUTH SUCCESS');
         jsonResponse(['status' => 'success', 'message' => 'Authenticated successfully']);
     }
 
     recordFailedLoginAttempt();
+    auditSecurityLog('INVALID PIN supplied');
     jsonResponse(['status' => 'error', 'message' => 'Invalid Security PIN passcode'], 401);
 }
 
@@ -34,7 +36,30 @@ if ($action === 'logout') {
     jsonResponse(['status' => 'success', 'message' => 'Logged out successfully']);
 }
 
-// Public get_frame endpoint (JSON base64 format for 100% reliable mobile display)
+// All actions below require authentication
+requireAuth();
+
+// 0. Live Frame Relay (JSON Base64 format matching working motion log format)
+if ($action === 'push_frame') {
+    $input = json_decode(file_get_contents('php://input'), true);
+    if (!empty($input['frame'])) {
+        if (!file_exists(DATA_DIR)) {
+            @mkdir(DATA_DIR, 0755, true);
+        }
+        $payload = [
+            'frame' => $input['frame'],
+            'timestamp' => time(),
+            'formatted_time' => date('Y-m-d H:i:s')
+        ];
+        if (!writeJsonFile(DATA_DIR . '/live_frame.json', $payload)) {
+            jsonResponse(['status' => 'error', 'message' => 'Failed to store frame on server'], 500);
+        }
+        jsonResponse(['status' => 'success']);
+    }
+    jsonResponse(['status' => 'error', 'message' => 'Invalid frame data'], 400);
+}
+
+// 0b. Fetch Latest Live Frame (JSON base64 relay — requires authentication)
 if ($action === 'get_frame') {
     $frameFile = DATA_DIR . '/live_frame.json';
 
@@ -56,28 +81,7 @@ if ($action === 'get_frame') {
     jsonResponse(['status' => 'offline', 'message' => 'No active live frame available'], 404);
 }
 
-// All actions below require authentication
-requireAuth();
-
-// 0. Live Frame Relay (JSON Base64 format matching working motion log format)
-if ($action === 'push_frame') {
-    $input = json_decode(file_get_contents('php://input'), true);
-    if (!empty($input['frame'])) {
-        if (!file_exists(DATA_DIR)) {
-            @mkdir(DATA_DIR, 0755, true);
-        }
-        $payload = [
-            'frame' => $input['frame'],
-            'timestamp' => time(),
-            'formatted_time' => date('Y-m-d H:i:s')
-        ];
-        file_put_contents(DATA_DIR . '/live_frame.json', json_encode($payload));
-        jsonResponse(['status' => 'success']);
-    }
-    jsonResponse(['status' => 'error', 'message' => 'Invalid frame data'], 400);
-}
-
-// 1. Register Camera Peer ID (Heartbeat from Office Laptop)
+// 1. Register Peer ID (Camera Heartbeat)
 if ($action === 'register_peer') {
     $input = json_decode(file_get_contents('php://input'), true);
     $peerId = trim($input['peer_id'] ?? '');
@@ -96,7 +100,9 @@ if ($action === 'register_peer') {
         'last_seen_formatted' => date('Y-m-d H:i:s')
     ];
 
-    file_put_contents(PEER_DATA_FILE, json_encode($peerData, JSON_PRETTY_PRINT));
+    if (!writeJsonFile(PEER_DATA_FILE, $peerData)) {
+        jsonResponse(['status' => 'error', 'message' => 'Failed to persist peer registration'], 500);
+    }
     jsonResponse(['status' => 'success', 'message' => 'Peer registered successfully', 'data' => $peerData]);
 }
 
@@ -138,8 +144,13 @@ if ($action === 'log_motion') {
         $logs = json_decode(file_get_contents(LOGS_DATA_FILE), true) ?: [];
     }
 
+    // Keep max 50 recent events (leave room for the new entry)
+    $logs = array_values(array_filter($logs, static fn($log) => is_array($log)));
+    $logs = array_slice($logs, 0, 48);
+
     $newLog = [
         'id' => uniqid('evt_'),
+        'ts' => time(),
         'timestamp' => date('Y-m-d H:i:s'),
         'time_ago' => 'Just now',
         'type' => $type,
@@ -147,28 +158,54 @@ if ($action === 'log_motion') {
         'snapshot' => $snapshot
     ];
 
-    // Keep max 50 recent events
     array_unshift($logs, $newLog);
-    if (count($logs) > 50) {
-        $logs = array_slice($logs, 0, 50);
+
+    if (!writeJsonFile(LOGS_DATA_FILE, $logs)) {
+        jsonResponse(['status' => 'error', 'message' => 'Failed to write event log'], 500);
     }
 
-    file_put_contents(LOGS_DATA_FILE, json_encode($logs, JSON_PRETTY_PRINT));
+    // Never return snapshot payloads in list/log responses (fetch via get_snapshot on demand)
+    unset($newLog['snapshot']);
     jsonResponse(['status' => 'success', 'message' => 'Event logged', 'log' => $newLog]);
 }
 
-// 4. Fetch Event Logs
+// 4. Fetch Logs (metadata only — snapshot payloads are fetched on demand via get_snapshot)
 if ($action === 'get_logs') {
     $logs = [];
     if (file_exists(LOGS_DATA_FILE)) {
         $logs = json_decode(file_get_contents(LOGS_DATA_FILE), true) ?: [];
     }
-    jsonResponse(['status' => 'success', 'logs' => $logs]);
+    $logs = pruneExpiredLogs($logs);
+    foreach ($logs as $i => $log) {
+        unset($logs[$i]['snapshot']); // keep payloads out of list responses
+    }
+    jsonResponse(['status' => 'success', 'logs' => array_values($logs)]);
+}
+
+// 4b. Fetch a single snapshot by event id (privacy: delivered only when explicitly requested)
+if ($action === 'get_snapshot') {
+    $id = $_GET['id'] ?? '';
+    $logs = [];
+    if (file_exists(LOGS_DATA_FILE)) {
+        $logs = json_decode(file_get_contents(LOGS_DATA_FILE), true) ?: [];
+    }
+    foreach ($logs as $log) {
+        if (is_array($log) && ($log['id'] ?? '') === $id) {
+            $ts = isset($log['ts']) ? (int)$log['ts'] : (strtotime($log['timestamp'] ?? '') ?: time());
+            if (!empty($log['snapshot']) && (time() - $ts) <= SNAPSHOT_RETENTION_SECONDS) {
+                jsonResponse(['status' => 'success', 'snapshot' => $log['snapshot'], 'timestamp' => $log['timestamp'] ?? '']);
+            }
+            break;
+        }
+    }
+    jsonResponse(['status' => 'error', 'message' => 'Snapshot not found or expired'], 404);
 }
 
 // 5. Clear Event Logs
 if ($action === 'clear_logs') {
-    file_put_contents(LOGS_DATA_FILE, json_encode([], JSON_PRETTY_PRINT));
+    if (!writeJsonFile(LOGS_DATA_FILE, [])) {
+        jsonResponse(['status' => 'error', 'message' => 'Failed to clear logs'], 500);
+    }
     jsonResponse(['status' => 'success', 'message' => 'Logs cleared']);
 }
 

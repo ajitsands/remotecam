@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/config.php';
+sendSecurityHeaders();
 requireAuth();
 ?>
 <!DOCTYPE html>
@@ -8,10 +9,11 @@ requireAuth();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= APP_NAME ?> - Office Camera Host</title>
-    <link rel="stylesheet" href="css/style.css?v=<?= time() ?>">
+    <link rel="stylesheet" href="css/style.css?v=<?= APP_VERSION ?>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- PeerJS CDN -->
-    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <!-- PeerJS: local copy primary, CDN fallback for resilience -->
+    <script src="js/vendor/peerjs.min.js"></script>
+    <script>window.Peer || document.write('<script src="https:\/\/unpkg.com\/peerjs@1.5.2\/dist\/peerjs.min.js"><\/script>');</script>
 </head>
 <body>
 
@@ -93,19 +95,9 @@ requireAuth();
         </div>
     </main>
 
-    <script src="js/app.js?v=<?= time() ?>"></script>
+    <script src="js/app.js?v=<?= APP_VERSION ?>"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            startOfficeCamera();
-
-            // Exit stealth mode on double click or ESC key
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape') document.body.classList.remove('stealth-mode');
-            });
-            document.addEventListener('dblclick', () => {
-                document.body.classList.remove('stealth-mode');
-            });
-        });
+        document.addEventListener('DOMContentLoaded', () => startOfficeCamera());
     </script>
 </body>
 </html>

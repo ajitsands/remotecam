@@ -24,10 +24,15 @@ Upload all files in this project directory to your web server (e.g., in a `/webc
 - Upload to: `https://remote.sandslab.com/webcam/` (or root directory).
 
 ### 2. Configure Security PIN
-Open `config.php` and set your desired security PIN passcode:
-```php
-define('SECURITY_PIN', '1234'); // Change '1234' to your secret 4-6 digit code
-```
+
+The PIN is **required** via the `CAMGUARD_PIN` environment variable. The app fails closed (shows a configuration error and refuses to run) if it is not set — there is no hardcoded default.
+
+- **cPanel / shared hosting:** add to `.htaccess` (replace `YOUR_SECRET_PIN`):
+  ```apache
+  SetEnv CAMGUARD_PIN YOUR_SECRET_PIN
+  ```
+- **Apache vhost / nginx:** set the environment variable in your server config, e.g. via `export CAMGUARD_PIN=YOUR_SECRET_PIN` before starting PHP-FPM or in the site's environment block.
+- **CLI test:** `export CAMGUARD_PIN=1234 && php -S localhost:8000` (change `1234` to your secret 4-6 digit code)
 
 ### 3. Ensure File Permissions
 Ensure the `data/` directory is writable by the PHP server so it can create `peer_status.json` and `motion_logs.json`:

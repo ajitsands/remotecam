@@ -1,2 +1,5 @@
 data/*.json
+data/*.log
+data/sessions/
 !data/.gitkeep
+!data/.htaccess

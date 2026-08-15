@@ -14,6 +14,10 @@ let isWebRTCConnected = false;
 let fallbackInterval = null;
 let peerReconnectTimer = null;
 let peerReconnectAttempts = 0;
+let cameraRetryTimer = null;
+let cameraRetryAttempt = 0;
+let isMutedViewerAudio = true;
+const CAMERA_STATIC_PEER_ID = 'sands_office_laptop';
 
 function sanitizeLogText(value) {
     return String(value ?? '').replace(/[&<>"']/g, (char) => ({
@@ -103,20 +107,29 @@ async function startOfficeCamera() {
     const statusBadge = document.getElementById('cameraStatus');
     const peerIdDisplay = document.getElementById('peerIdDisplay');
 
+    if (!videoElement || !statusBadge) return;
+
     try {
         statusBadge.className = 'status-badge status-connecting';
         statusBadge.innerHTML = '<span class="dot-pulse"></span> Starting Camera...';
 
-        // 1. Get User Media (Webcam + Audio)
-        localStream = await navigator.mediaDevices.getUserMedia({
-            video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
-            audio: true
-        });
+        initStealthShortcuts();
 
+        // 1. Get User Media (reuse the stream across reconnect retries)
+        if (!localStream || !localStream.getTracks().some(t => t.readyState === 'live')) {
+            localStream = await navigator.mediaDevices.getUserMedia({
+                video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
+                audio: true
+            });
+        }
         videoElement.srcObject = localStream;
 
-        // 2. Init PeerJS with predictable camera ID
-        const peerId = 'sands_office_laptop';
+        // 2. Init PeerJS with a predictable camera ID.
+        //    After a reconnect, use a suffixed ID so a stale broker registration
+        //    (unavailable-id) can never deadlock the camera.
+        const peerId = cameraRetryAttempt > 0
+            ? CAMERA_STATIC_PEER_ID + '_' + cameraRetryAttempt
+            : CAMERA_STATIC_PEER_ID;
         await initPeerJS(peerId);
 
         peerIdDisplay.textContent = peerId;
@@ -143,20 +156,60 @@ async function startOfficeCamera() {
 
         peer.on('call', (call) => {
             console.log('Incoming remote viewer direct call...');
-            call.answer(localStream); // Answer call with local webcam stream
             currentCall = call;
+            call.answer(localStream); // Answer call with local webcam stream
         });
 
         // 5. Start Motion Detection & HTTP Frame Streamer
         startMotionDetection(videoElement);
         startFramePusher(videoElement);
 
+        // 6. Healthy online state — reset the reconnect counter
+        cameraRetryAttempt = 0;
+
     } catch (err) {
-        console.error('Camera Access Error:', err);
+        console.error('Camera Error:', err);
         statusBadge.className = 'status-badge status-offline';
-        statusBadge.innerHTML = 'Camera Error: ' + err.message;
-        alert('Could not access webcam. Please ensure HTTPS and browser permissions are granted.');
+        statusBadge.innerHTML = err && err.message ? 'Camera Error: ' + err.message : 'Camera Error';
+        scheduleCameraRetry(err);
     }
+}
+
+// Retry camera boot with backoff. Only PeerJS-related failures auto-retry;
+// permission/device errors surface the message directly instead of prompt-looping.
+function scheduleCameraRetry(err) {
+    const isPeerError = Boolean(err && err.type); // PeerJS errors expose a `type`
+    const isMediaError = Boolean(err && ['NotAllowedError', 'NotFoundError', 'NotReadableError',
+        'OverconstrainedError', 'AbortError', 'SecurityError'].includes(err.name));
+
+    if (isMediaError) return;
+    if (!isPeerError) return;
+    if (cameraRetryTimer) return;
+
+    cameraRetryAttempt += 1;
+    const delay = Math.min(3000 + (cameraRetryAttempt * 2000), 15000);
+
+    cameraRetryTimer = setTimeout(() => {
+        cameraRetryTimer = null;
+        try {
+            if (peer && typeof peer.destroy === 'function') peer.destroy();
+        } catch (e) {}
+        peer = null;
+        startOfficeCamera();
+    }, delay);
+}
+
+// ESC / double-click exits Stealth Mode (office laptop page)
+function initStealthShortcuts() {
+    if (document.body.classList.contains('stealth-mode')) {
+        document.body.classList.remove('stealth-mode');
+    }
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') document.body.classList.remove('stealth-mode');
+    });
+    document.addEventListener('dblclick', () => {
+        document.body.classList.remove('stealth-mode');
+    });
 }
 
 // HTTP Frame Streamer (Reliable live JPEG stream over HTTPS API)
@@ -167,7 +220,15 @@ function startFramePusher(videoElement) {
     canvas.height = 270;
 
     setInterval(async () => {
+        // Skip HTTP relay uploads while a WebRTC stream is established —
+        // no point paying server bandwidth + disk I/O for a stream nobody needs.
+        if (currentCall && (currentCall.open || currentCall.peer)) return;
+
         if (videoElement.paused || videoElement.ended || !localStream) return;
+
+        // Only relay when a viewer might be watching (visible camera page)
+        if (document.hidden) return;
+
         ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
         const frameBase64 = canvas.toDataURL('image/jpeg', 0.5);
 
@@ -178,7 +239,7 @@ function startFramePusher(videoElement) {
                 body: JSON.stringify({ frame: frameBase64 })
             });
         } catch (e) {}
-    }, 300);
+    }, 1000);
 }
 
 // Register Peer Heartbeat via PHP API
@@ -237,7 +298,10 @@ function startMotionDetection(videoElement) {
 
             const motionPercent = (diffCount / totalPixels) * 100;
 
-            if (motionPercent > (100 - motionSensitivity * 4)) {
+            // Sensitivity slider 5-35 -> threshold 80% - 5%.
+            // Clamp prevents threshold going negative (was triggering on every frame at max sensitivity).
+            const motionThreshold = Math.max(5, 100 - motionSensitivity * 4);
+            if (motionPercent > motionThreshold) {
                 console.log('Motion Detected! Change:', motionPercent.toFixed(1) + '%');
                 triggerMotionAlert(canvas.toDataURL('image/jpeg', 0.6));
             }
@@ -495,15 +559,31 @@ async function loadEventLogs() {
                 const item = document.createElement('div');
                 item.className = 'event-item';
 
-                const thumbWrap = log.snapshot ? document.createElement('img') : document.createElement('div');
+                const thumbWrap = document.createElement('div');
+                thumbWrap.className = 'event-thumb';
+                thumbWrap.style.background = 'rgba(255,255,255,0.05)';
+                thumbWrap.style.display = 'flex';
+                thumbWrap.style.alignItems = 'center';
+                thumbWrap.style.justifyContent = 'center';
+                thumbWrap.style.fontSize = '0.8rem';
+
                 if (log.snapshot) {
-                    thumbWrap.className = 'event-thumb';
-                    thumbWrap.src = log.snapshot;
-                    thumbWrap.alt = sanitizeLogText(log.type || 'Motion snapshot');
-                    thumbWrap.addEventListener('click', () => openSnapshotModal(log.snapshot, log.timestamp));
+                    // Backwards compatible: an inline snapshot renders as a clickable image.
+                    const img = document.createElement('img');
+                    img.className = 'event-thumb';
+                    img.src = log.snapshot;
+                    img.alt = sanitizeLogText(log.type || 'Motion snapshot');
+                    img.style.cursor = 'pointer';
+                    img.addEventListener('click', () => openSnapshotModal(log.snapshot, log.timestamp));
+                    item.appendChild(img);
+                } else if (log.has_snapshot) {
+                    // Snapshots are delivered on demand (get_snapshot) to keep the list light.
+                    thumbWrap.innerHTML = '<i class="fa-solid fa-camera"></i>';
+                    thumbWrap.style.cursor = 'pointer';
+                    thumbWrap.title = 'View snapshot';
+                    thumbWrap.addEventListener('click', () => loadSnapshot(log.id, log.timestamp));
                 } else {
-                    thumbWrap.className = 'event-thumb';
-                    thumbWrap.style.background = 'rgba(255,255,255,0.05)';
+                    thumbWrap.innerHTML = '<i class="fa-solid fa-bell" style="color: var(--text-muted);"></i>';
                 }
 
                 const details = document.createElement('div');
@@ -542,4 +622,58 @@ function openSnapshotModal(imgSrc, timestamp) {
 function closeModal() {
     const modal = document.getElementById('snapshotModal');
     if (modal) modal.classList.remove('active');
+}
+
+// ------------------------------------------------------------------
+// VIEWER UTILITIES (were inline HTML scripts; consolidated into app.js)
+// ------------------------------------------------------------------
+
+// Fetch a snapshot by event id (privacy: images are NOT shipped with the log list)
+async function loadSnapshot(logId, timestamp) {
+    if (!logId) return;
+    try {
+        const res = await fetch('api.php?action=get_snapshot&id=' + encodeURIComponent(logId));
+        const data = await res.json();
+        if (data.status === 'success' && data.snapshot) {
+            openSnapshotModal(data.snapshot, timestamp || data.timestamp);
+        } else {
+            alert('Snapshot is no longer available (snapshots expire after 24 hours).');
+        }
+    } catch (e) {
+        alert('Could not load the snapshot. Please check your connection.');
+    }
+}
+
+// Viewer audio mute control
+function toggleAudioMute() {
+    const video = document.getElementById('remoteVideo');
+    const btn = document.getElementById('audioBtn');
+    if (!video || !btn) return;
+
+    isMutedViewerAudio = !isMutedViewerAudio;
+    video.muted = isMutedViewerAudio;
+
+    btn.innerHTML = isMutedViewerAudio
+        ? '<i class="fa-solid fa-volume-xmark"></i> Sound Off'
+        : '<i class="fa-solid fa-volume-high"></i> Live Audio ON';
+}
+
+function toggleFullscreen() {
+    const container = document.querySelector('.video-stage-container');
+    if (!container) return;
+    if (!document.fullscreenElement) {
+        container.requestFullscreen().catch(err => console.warn('Fullscreen error:', err));
+    } else {
+        document.exitFullscreen();
+    }
+}
+
+async function clearLogs() {
+    if (!confirm('Clear all motion logs?')) return;
+    try {
+        await fetch('api.php?action=clear_logs');
+        loadEventLogs();
+    } catch (e) {
+        console.warn('Failed to clear logs:', e);
+    }
 }
