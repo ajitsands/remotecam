@@ -25,14 +25,29 @@ Upload all files in this project directory to your web server (e.g., in a `/webc
 
 ### 2. Configure Security PIN
 
-The PIN is **required** via the `CAMGUARD_PIN` environment variable. The app fails closed (shows a configuration error and refuses to run) if it is not set — there is no hardcoded default.
+The PIN is **required** — the app fails closed (shows the configuration error below and refuses to run) if it is not set. There is **no hardcoded default**. This is intentional.
 
-- **cPanel / shared hosting:** add to `.htaccess` (replace `YOUR_SECRET_PIN`):
-  ```apache
-  SetEnv CAMGUARD_PIN YOUR_SECRET_PIN
-  ```
-- **Apache vhost / nginx:** set the environment variable in your server config, e.g. via `export CAMGUARD_PIN=YOUR_SECRET_PIN` before starting PHP-FPM or in the site's environment block.
-- **CLI test:** `export CAMGUARD_PIN=1234 && php -S localhost:8000` (change `1234` to your secret 4-6 digit code)
+Set the PIN **one** of these ways (first one found wins):
+
+**Option A — `.htaccess` (recommended for cPanel / Apache / LiteSpeed):**
+Add to the root `.htaccess` (replace `YOUR_SECRET_PIN`):
+```apache
+SetEnv CAMGUARD_PIN YOUR_SECRET_PIN
+```
+
+**Option B — Real environment variable (nginx / PHP-FPM / Docker / CLI):**
+```bash
+export CAMGUARD_PIN=YOUR_SECRET_PIN   # or set it in your FPM pool / Docker env
+```
+
+**Option C — git-ignored file (works on any host):**
+Copy `data/pin.php.example` to `data/pin.php` and set your PIN inside:
+```php
+return 'YOUR_SECRET_PIN'; // <-- data/pin.php
+```
+`data/pin.php` is git-ignored and blocked from direct web access (guarded blank page if reached directly).
+
+> ⚠️ **Troubleshooting:** If you see `Configuration error: CAMGUARD_PIN is not set. Refusing to start.` after a `git pull`, the PIN source was not found on the server yet. Do the **`.htaccess` `SetEnv`** line (option A) or the **`data/pin.php`** file (option C), then reload. If `SetEnv` doesn't take effect your PHP is likely running as FastCGI without env passthrough — use option C for those hosts.
 
 ### 3. Ensure File Permissions
 Ensure the `data/` directory is writable by the PHP server so it can create `peer_status.json` and `motion_logs.json`:

@@ -5,8 +5,14 @@
 Options -Indexes
 
 # Protect sensitive data files from direct HTTP viewing
-# (JSON state files, session data, security logs)
+# (JSON state files, session data, security logs, local PIN file)
 <FilesMatch "\.(json|log|txt)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Block direct web access to the local PIN file even if data/.htaccess is disabled
+<FilesMatch "^pin\.php$">
     Order allow,deny
     Deny from all
 </FilesMatch>

@@ -1,5 +1,6 @@
 data/*.json
 data/*.log
+data/pin.php
 data/sessions/
 !data/.gitkeep
 !data/.htaccess

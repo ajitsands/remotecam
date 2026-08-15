@@ -1,0 +1,18 @@
+<?php
+/**
+ * SandS CamGuard — Local PIN (template file)
+ *
+ * Copy this file to "data/pin.php" on your server and set your secret PIN.
+ *   - data/pin.php is git-ignored (never committed) and auto-detected by config.php.
+ *   - It is blocked from direct web access (data/.htaccess + root .htaccess)
+ *     AND guarded below so even a misconfigured host shows a blank page.
+ *
+ * The main deployment path is an environment variable instead:
+ *   .htaccess ->  SetEnv CAMGUARD_PIN 1234
+ */
+if (!defined('APP_PIN_INCLUDE')) {
+    http_response_code(404);
+    exit; // never leak the PIN if this file is hit directly over HTTP
+}
+
+return '1234'; // <-- CHANGE THIS to your secret 4-6 digit PIN

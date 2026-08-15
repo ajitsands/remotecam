@@ -19,16 +19,31 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 // System Security Configuration
-// The PIN is REQUIRED via the CAMGUARD_PIN environment variable.
-// Fail CLOSED: never fall back to a hardcoded/default PIN.
-$configuredPin = getenv('CAMGUARD_PIN') ?: ($_ENV['CAMGUARD_PIN'] ?? null);
-if ($configuredPin === null || trim($configuredPin) === '') {
-    http_response_code(500);
-    header('Content-Type: text/plain; charset=utf-8');
-    exit('Configuration error: environment variable CAMGUARD_PIN is not set. Refusing to start.');
+// The PIN is REQUIRED. Fail CLOSED: never fall back to a hardcoded/default PIN.
+// It is detected, in order, from:
+//   1. getenv('CAMGUARD_PIN') or $_ENV['CAMGUARD_PIN']      (server env var / .env)
+//   2. $_SERVER['CAMGUARD_PIN']                              (Apache/LiteSpeed .htaccess SetEnv)
+//   3. data/pin.php                                        (git-ignored file - works on any host)
+$configuredPin = (string) (getenv('CAMGUARD_PIN') ?: ($_ENV['CAMGUARD_PIN'] ?? $_SERVER['CAMGUARD_PIN'] ?? ''));
+
+if ($configuredPin === '') {
+    $localPinFile = __DIR__ . '/data/pin.php';
+    if (is_file($localPinFile)) {
+        define('APP_PIN_INCLUDE', 1); // guards pin.php from direct web access
+        $pinFromLocal = @include $localPinFile;
+        if (is_string($pinFromLocal) && trim($pinFromLocal) !== '') {
+            $configuredPin = trim($pinFromLocal);
+        }
+    }
 }
 
-define('SECURITY_PIN', (string) $configuredPin);
+if ($configuredPin === '') {
+    http_response_code(500);
+    header('Content-Type: text/plain; charset=utf-8');
+    exit('Configuration error: CAMGUARD_PIN is not set. Add it via .htaccess (SetEnv CAMGUARD_PIN XXXXX) or create data/pin.php. Refusing to start.');
+}
+
+define('SECURITY_PIN', $configuredPin);
 define('APP_NAME', 'SandS CamGuard Remote');
 define('APP_VERSION', '1.3.0');
 define('DATA_DIR', __DIR__ . '/data');
