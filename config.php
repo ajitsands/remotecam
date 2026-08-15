@@ -19,16 +19,36 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 // System Security Configuration
-// Secret PIN passcode
-define('SECURITY_PIN', '9080'); 
+$configuredPin = getenv('CAMGUARD_PIN') ?: ($_ENV['CAMGUARD_PIN'] ?? null);
+if ($configuredPin === null || trim($configuredPin) === '') {
+    $configuredPin = '9080';
+}
+
+define('SECURITY_PIN', (string) $configuredPin);
 define('APP_NAME', 'SandS CamGuard Remote');
 define('DATA_DIR', __DIR__ . '/data');
 define('PEER_DATA_FILE', DATA_DIR . '/peer_status.json');
 define('LOGS_DATA_FILE', DATA_DIR . '/motion_logs.json');
+define('SESSION_TIMEOUT_SECONDS', 1800);
 
 // Ensure data directory exists
 if (!file_exists(DATA_DIR)) {
     @mkdir(DATA_DIR, 0755, true);
+}
+
+// Hardening for PHP sessions
+if (session_status() === PHP_SESSION_NONE) {
+    ini_set('session.use_strict_mode', '1');
+    ini_set('session.cookie_httponly', '1');
+    ini_set('session.cookie_samesite', 'Lax');
+    ini_set('session.use_only_cookies', '1');
+    session_set_cookie_params([
+        'lifetime' => 0,
+        'path' => '/',
+        'secure' => (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'),
+        'httponly' => true,
+        'samesite' => 'Lax'
+    ]);
 }
 
 // JSON Output Helper
@@ -41,7 +61,35 @@ function jsonResponse($data, $statusCode = 200) {
 
 // Check if user is logged in
 function isLoggedIn() {
-    return isset($_SESSION['authenticated']) && $_SESSION['authenticated'] === true;
+    if (!(isset($_SESSION['authenticated']) && $_SESSION['authenticated'] === true)) {
+        return false;
+    }
+
+    $lastSeen = $_SESSION['last_activity'] ?? time();
+    if ((time() - $lastSeen) > SESSION_TIMEOUT_SECONDS) {
+        session_unset();
+        session_destroy();
+        return false;
+    }
+
+    $_SESSION['last_activity'] = time();
+    return true;
+}
+
+function loginRateLimitExceeded() {
+    $attempts = $_SESSION['login_attempts'] ?? [];
+    $now = time();
+
+    $attempts = array_values(array_filter($attempts, static fn($timestamp) => ($now - (int)$timestamp) < 300));
+    $_SESSION['login_attempts'] = $attempts;
+
+    return count($attempts) >= 5;
+}
+
+function recordFailedLoginAttempt() {
+    $attempts = $_SESSION['login_attempts'] ?? [];
+    $attempts[] = time();
+    $_SESSION['login_attempts'] = array_values(array_filter($attempts, static fn($timestamp) => (time() - (int)$timestamp) < 300));
 }
 
 // Auth Guard

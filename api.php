@@ -13,12 +13,20 @@ if ($action === 'login') {
     $input = json_decode(file_get_contents('php://input'), true);
     $pin = $input['pin'] ?? $_POST['pin'] ?? '';
 
-    if ($pin === SECURITY_PIN) {
-        $_SESSION['authenticated'] = true;
-        jsonResponse(['status' => 'success', 'message' => 'Authenticated successfully']);
-    } else {
-        jsonResponse(['status' => 'error', 'message' => 'Invalid Security PIN passcode'], 401);
+    if (loginRateLimitExceeded()) {
+        jsonResponse(['status' => 'error', 'message' => 'Too many failed attempts. Please wait 5 minutes before trying again.'], 429);
     }
+
+    if ((string) $pin === (string) SECURITY_PIN) {
+        $_SESSION['authenticated'] = true;
+        $_SESSION['last_activity'] = time();
+        $_SESSION['login_attempts'] = [];
+        session_regenerate_id(true);
+        jsonResponse(['status' => 'success', 'message' => 'Authenticated successfully']);
+    }
+
+    recordFailedLoginAttempt();
+    jsonResponse(['status' => 'error', 'message' => 'Invalid Security PIN passcode'], 401);
 }
 
 if ($action === 'logout') {

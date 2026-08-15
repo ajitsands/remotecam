@@ -12,6 +12,40 @@ let motionSensitivity = 20; // Lower = more sensitive
 let isMotionDetectionActive = false;
 let isWebRTCConnected = false;
 let fallbackInterval = null;
+let peerReconnectTimer = null;
+let peerReconnectAttempts = 0;
+
+function sanitizeLogText(value) {
+    return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    }[char]));
+}
+
+function schedulePeerReconnect() {
+    if (peerReconnectTimer) return;
+
+    const delay = Math.min(3000 + (peerReconnectAttempts * 1500), 15000);
+    peerReconnectAttempts += 1;
+
+    peerReconnectTimer = setTimeout(() => {
+        peerReconnectTimer = null;
+        try {
+            if (peer && typeof peer.destroy === 'function') {
+                peer.destroy();
+            }
+        } catch (e) {}
+
+        const viewer = document.getElementById('remoteVideo');
+        const statusBadge = document.getElementById('viewerStatus');
+        if (viewer && statusBadge) {
+            startRemoteViewer();
+        }
+    }, delay);
+}
 
 // Initialize PeerJS Client
 function initPeerJS(customId = null) {
@@ -41,7 +75,22 @@ function initPeerJS(customId = null) {
 
         peer.on('error', (err) => {
             console.error('PeerJS Error:', err);
+            peerReconnectAttempts = 0;
             reject(err);
+        });
+
+        peer.on('disconnected', () => {
+            console.warn('PeerJS disconnected. Attempting reconnect...');
+            if (peer && typeof peer.reconnect === 'function') {
+                peer.reconnect();
+            } else {
+                schedulePeerReconnect();
+            }
+        });
+
+        peer.on('close', () => {
+            console.warn('PeerJS connection closed. Scheduling reconnect...');
+            schedulePeerReconnect();
         });
     });
 }
@@ -430,20 +479,50 @@ async function loadEventLogs() {
         const data = await res.json();
 
         if (data.status === 'success' && data.logs) {
+            logList.innerHTML = '';
+
             if (data.logs.length === 0) {
-                logList.innerHTML = '<div style="color: var(--text-muted); font-size: 0.85rem; padding: 10px;">No motion alerts detected yet.</div>';
+                const empty = document.createElement('div');
+                empty.style.color = 'var(--text-muted)';
+                empty.style.fontSize = '0.85rem';
+                empty.style.padding = '10px';
+                empty.textContent = 'No motion alerts detected yet.';
+                logList.appendChild(empty);
                 return;
             }
 
-            logList.innerHTML = data.logs.map(log => `
-                <div class="event-item">
-                    ${log.snapshot ? `<img src="${log.snapshot}" class="event-thumb" onclick="openSnapshotModal('${log.snapshot}', '${log.timestamp}')" />` : '<div class="event-thumb"></div>'}
-                    <div class="event-details">
-                        <div class="event-type">${log.type}</div>
-                        <div class="event-time">${log.timestamp}</div>
-                    </div>
-                </div>
-            `).join('');
+            data.logs.forEach((log) => {
+                const item = document.createElement('div');
+                item.className = 'event-item';
+
+                const thumbWrap = log.snapshot ? document.createElement('img') : document.createElement('div');
+                if (log.snapshot) {
+                    thumbWrap.className = 'event-thumb';
+                    thumbWrap.src = log.snapshot;
+                    thumbWrap.alt = sanitizeLogText(log.type || 'Motion snapshot');
+                    thumbWrap.addEventListener('click', () => openSnapshotModal(log.snapshot, log.timestamp));
+                } else {
+                    thumbWrap.className = 'event-thumb';
+                    thumbWrap.style.background = 'rgba(255,255,255,0.05)';
+                }
+
+                const details = document.createElement('div');
+                details.className = 'event-details';
+
+                const typeEl = document.createElement('div');
+                typeEl.className = 'event-type';
+                typeEl.textContent = log.type || 'Motion Detected';
+
+                const timeEl = document.createElement('div');
+                timeEl.className = 'event-time';
+                timeEl.textContent = log.timestamp || 'Just now';
+
+                details.appendChild(typeEl);
+                details.appendChild(timeEl);
+                item.appendChild(thumbWrap);
+                item.appendChild(details);
+                logList.appendChild(item);
+            });
         }
     } catch (e) {}
 }
@@ -452,10 +531,10 @@ function openSnapshotModal(imgSrc, timestamp) {
     const modal = document.getElementById('snapshotModal');
     const modalImg = document.getElementById('modalImage');
     const modalTitle = document.getElementById('modalTitle');
-    
+
     if (modal && modalImg) {
         modalImg.src = imgSrc;
-        modalTitle.textContent = 'Motion Snapshot (' + timestamp + ')';
+        modalTitle.textContent = 'Motion Snapshot (' + String(timestamp || '') + ')';
         modal.classList.add('active');
     }
 }
