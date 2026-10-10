@@ -80,14 +80,35 @@ $authenticated = isLoggedIn();
                         <div class="mode-icon remote">
                             <i class="fa-solid fa-display"></i>
                         </div>
-                        <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.4rem; margin-bottom: 0.5rem;">Remote Viewer (Home / Mobile)</h2>
+                        <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.4rem; margin-bottom: 0.5rem;">Webcam & Laptop Viewer</h2>
                         <p style="color: var(--text-muted); font-size: 0.92rem; line-height: 1.5;">
-                            Open this on your <strong>Home Computer or Phone</strong>. Connects live to your office laptop video feed over the internet with low latency.
+                            Open this on your <strong>Home Computer or Phone</strong>. Connects live to your office laptop webcam feed over the internet with low latency.
                         </p>
                     </div>
                     <div style="margin-top: 2rem;">
                         <a href="viewer.php" class="btn btn-secondary btn-block">
                             <i class="fa-solid fa-eye"></i> Open Live Stream Viewer
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Mode 3: 4G IP Camera Stream (MediaMTX) -->
+                <div class="mode-card" style="border-color: rgba(6, 182, 212, 0.4); background: radial-gradient(circle at top, rgba(6, 182, 212, 0.08) 0%, var(--bg-card) 70%);">
+                    <div>
+                        <div class="mode-icon" style="background: linear-gradient(135deg, var(--accent-cyan), #0284c7); color: #fff;">
+                            <i class="fa-solid fa-tower-broadcast"></i>
+                        </div>
+                        <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.4rem; margin-bottom: 0.5rem;">SaNDS CCTV Cloud (React App)</h2>
+                        <p style="color: var(--text-muted); font-size: 0.92rem; line-height: 1.5;">
+                            Multi-camera management portal with <strong>Light Theme</strong>, horizontal navigation, multi-grid viewing (1x1, 2x2, 3x3, 4x4), and instant RTMP setup.
+                        </p>
+                    </div>
+                    <div style="margin-top: 2rem; display: flex; flex-direction: column; gap: 8px;">
+                        <a href="cctv_app.php" class="btn btn-primary btn-block" style="background: linear-gradient(135deg, #0284c7, #0369a1);">
+                            <i class="fa-solid fa-table-cells"></i> Launch CCTV Cloud App
+                        </a>
+                        <a href="remote_camera_setup_guide.html" target="_blank" class="btn btn-secondary btn-block" style="font-size: 0.85rem;">
+                            <i class="fa-solid fa-book"></i> Setup Procedure Guide
                         </a>
                     </div>
                 </div>

@@ -1,5 +1,6 @@
 data/*.json
 data/*.log
+data/*.sqlite
 data/pin.php
 data/sessions/
 !data/.gitkeep

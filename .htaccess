@@ -20,9 +20,9 @@ Options -Indexes
 # Allow main PHP entry points
 DirectoryIndex index.php
 
-# Optional: force HTTPS (uncomment after TLS certificate is configured on remote.sandslab.com)
-# <IfModule mod_rewrite.c>
-#     RewriteEngine On
-#     RewriteCond %{HTTPS} off
-#     RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
-# </IfModule>
+# Reverse Proxy for MediaMTX Streaming (Enables 100% HTTPS WebRTC & HLS)
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^stream/webrtc/(.*)$ http://127.0.0.1:8889/$1 [P,L]
+    RewriteRule ^stream/hls/(.*)$ http://127.0.0.1:8888/$1 [P,L]
+</IfModule>
