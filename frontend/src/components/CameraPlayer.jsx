@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { RefreshCw, Maximize2, ExternalLink, Play, ShieldAlert } from 'lucide-react';
+import { RefreshCw, Maximize2, ExternalLink } from 'lucide-react';
 
 export default function CameraPlayer({ camera, isSingleView }) {
   const containerRef = useRef(null);
@@ -13,12 +13,16 @@ export default function CameraPlayer({ camera, isSingleView }) {
   // Normalize stream path
   const streamPath = key.startsWith('live/') ? key : `live/${key}`;
   const directHttpUrl = `http://${host}:${webrtcPort}/${streamPath}/`;
-  const iframeSrc = `${directHttpUrl}?autoplay=1&muted=1&controls=1`;
 
-  // Detect if parent page is running on HTTPS and stream is HTTP (browser Mixed Content policy)
+  // Determine iframe source:
+  // If running on HTTPS (or non-localhost), use the HTTPS stream proxy to prevent Mixed Content blocking.
   const isHttpsParent = typeof window !== 'undefined' && window.location.protocol === 'https:';
-  const isHttpStream = directHttpUrl.startsWith('http://');
-  const isMixedContent = isHttpsParent && isHttpStream;
+  const backendBase = typeof window !== 'undefined' && window.location.pathname.includes('/app') ? '../backend/' : '/backend/';
+  const proxiedPlayerUrl = `${backendBase}stream_proxy.php?action=player&host=${encodeURIComponent(host)}&stream=${encodeURIComponent(key)}&webrtc_port=${webrtcPort}`;
+  
+  const iframeSrc = isHttpsParent 
+    ? proxiedPlayerUrl 
+    : `${directHttpUrl}?autoplay=1&muted=1&controls=1`;
 
   const openPopout = () => {
     window.open(
@@ -58,88 +62,41 @@ export default function CameraPlayer({ camera, isSingleView }) {
         overflow: 'hidden'
       }}
     >
-      {/* If Mixed Content is detected (HTTPS parent accessing HTTP camera), show clear launcher */}
-      {isMixedContent ? (
+      {/* Live WebRTC Stream Iframe */}
+      <iframe
+        key={iframeKey}
+        src={iframeSrc}
+        onLoad={() => setLoading(false)}
+        allow="autoplay; fullscreen; camera; microphone; encrypted-media"
+        title={`Live Stream ${key}`}
+        style={{
+          width: '100%',
+          height: '100%',
+          border: 'none',
+          backgroundColor: '#090d16',
+          display: 'block'
+        }}
+      />
+
+      {/* Loading Overlay */}
+      {loading && (
         <div style={{
-          padding: '24px',
-          textAlign: 'center',
-          color: '#94a3b8',
+          position: 'absolute',
+          inset: 0,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: '12px',
-          maxWidth: '360px'
+          justifyContent: 'center',
+          backgroundColor: '#090d16',
+          color: '#94a3b8',
+          gap: '8px',
+          fontSize: '0.85rem',
+          pointerEvents: 'none',
+          zIndex: 10
         }}>
-          <ShieldAlert size={32} style={{ color: '#f59e0b' }} />
-          <div>
-            <div style={{ color: '#f8fafc', fontWeight: 600, fontSize: '0.92rem' }}>
-              Direct Live Stream Ready
-            </div>
-            <div style={{ fontSize: '0.75rem', marginTop: '4px', color: '#94a3b8', lineHeight: 1.4 }}>
-              Web browser security blocks HTTP camera embeds inside HTTPS pages. Click below to view live feed in a dedicated player window.
-            </div>
-          </div>
-          <button
-            onClick={openPopout}
-            style={{
-              marginTop: '4px',
-              padding: '9px 18px',
-              borderRadius: '8px',
-              border: 'none',
-              backgroundColor: '#0284c7',
-              color: '#ffffff',
-              fontSize: '0.85rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)',
-              transition: 'background-color 0.2s'
-            }}
-          >
-            <Play size={14} /> Open Live Popout Player
-          </button>
+          <div className="live-pulse" style={{ width: '12px', height: '12px' }} />
+          <span>Connecting Live Stream...</span>
         </div>
-      ) : (
-        <>
-          {/* Live WebRTC / MediaMTX Stream Iframe */}
-          <iframe
-            key={iframeKey}
-            src={iframeSrc}
-            onLoad={() => setLoading(false)}
-            allow="autoplay; fullscreen; camera; microphone; encrypted-media"
-            title={`Live Stream ${key}`}
-            style={{
-              width: '100%',
-              height: '100%',
-              border: 'none',
-              backgroundColor: '#090d16',
-              display: 'block'
-            }}
-          />
-
-          {/* Loading Spinner */}
-          {loading && (
-            <div style={{
-              position: 'absolute',
-              inset: 0,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: '#090d16',
-              color: '#94a3b8',
-              gap: '8px',
-              fontSize: '0.85rem',
-              pointerEvents: 'none',
-              zIndex: 10
-            }}>
-              <div className="live-pulse" style={{ width: '12px', height: '12px' }} />
-              <span>Connecting Live Stream...</span>
-            </div>
-          )}
-        </>
       )}
 
       {/* Floating Action Overlay Bar */}
