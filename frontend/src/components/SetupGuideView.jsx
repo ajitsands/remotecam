@@ -13,6 +13,14 @@ export default function SetupGuideView({ user }) {
     setTimeout(() => setCopied(null), 2000);
   };
 
+  const mediamtxGuideUrl = typeof window !== 'undefined' && window.location.pathname.includes('/app')
+    ? './remote_camera_setup_guide.html'
+    : '/remote_camera_setup_guide.html';
+
+  const unvGuideUrl = typeof window !== 'undefined' && window.location.pathname.includes('/app')
+    ? './unv_4g_camera_onvif_setup_guide.html'
+    : '/unv_4g_camera_onvif_setup_guide.html';
+
   return (
     <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
       
@@ -187,7 +195,7 @@ export default function SetupGuideView({ user }) {
             </p>
           </div>
           <a
-            href="../remote_camera_setup_guide.html"
+            href={mediamtxGuideUrl}
             target="_blank"
             rel="noreferrer"
             style={{
@@ -246,7 +254,7 @@ export default function SetupGuideView({ user }) {
           </p>
         </div>
         <a
-          href="../unv_4g_camera_onvif_setup_guide.html"
+          href={unvGuideUrl}
           target="_blank"
           rel="noreferrer"
           style={{

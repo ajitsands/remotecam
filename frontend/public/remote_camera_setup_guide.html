@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>4G Remote Camera & MediaMTX Server Setup Guide</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-dark: #090d16;
+            --bg-card: #111827;
+            --bg-card-header: #1a2234;
+            --border-color: rgba(255, 255, 255, 0.08);
+            --accent-blue: #3b82f6;
+            --accent-cyan: #06b6d4;
+            --accent-green: #10b981;
+            --accent-amber: #f59e0b;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --code-bg: #06090e;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            line-height: 1.65;
+            padding: 30px 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            padding: 40px 20px;
+            margin-bottom: 30px;
+            background: radial-gradient(circle at 50% 0%, rgba(59, 130, 246, 0.15) 0%, transparent 70%);
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+        }
+
+        .header h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.4rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #ffffff 30%, var(--accent-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 12px;
+        }
+
+        .header p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            max-width: 650px;
+            margin: 0 auto;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 12px;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .section-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            margin-bottom: 25px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .section-header {
+            background: var(--bg-card-header);
+            padding: 18px 25px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .section-header h2 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.35rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #fff;
+        }
+
+        .section-header h2 i {
+            color: var(--accent-cyan);
+        }
+
+        .section-body {
+            padding: 25px;
+        }
+
+        .step-item {
+            margin-bottom: 25px;
+            padding-left: 20px;
+            border-left: 2px solid rgba(59, 130, 246, 0.3);
+            position: relative;
+        }
+
+        .step-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .step-item::before {
+            content: '';
+            position: absolute;
+            left: -7px;
+            top: 4px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--accent-blue);
+            box-shadow: 0 0 10px var(--accent-blue);
+        }
+
+        .step-title {
+            font-weight: 600;
+            font-size: 1.05rem;
+            color: #ffffff;
+            margin-bottom: 8px;
+        }
+
+        .code-block {
+            background: var(--code-bg);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 16px;
+            margin: 12px 0;
+            position: relative;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            color: #38bdf8;
+            overflow-x: auto;
+        }
+
+        .code-block code {
+            white-space: pre;
+            line-height: 1.5;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: var(--text-muted);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .copy-btn:hover {
+            background: var(--accent-blue);
+            color: #fff;
+        }
+
+        .param-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 0.9rem;
+        }
+
+        .param-table th, .param-table td {
+            padding: 10px 14px;
+            border: 1px solid var(--border-color);
+            text-align: left;
+        }
+
+        .param-table th {
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--text-main);
+            font-weight: 600;
+        }
+
+        .param-table td {
+            color: var(--text-muted);
+        }
+
+        .param-table td strong {
+            color: #fff;
+        }
+
+        .note-box {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 10px;
+            padding: 14px 18px;
+            font-size: 0.9rem;
+            color: #bfdbfe;
+            margin: 15px 0;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+
+        .note-box i {
+            color: var(--accent-blue);
+            font-size: 1.2rem;
+            margin-top: 2px;
+        }
+
+        .diagram-container {
+            background: #06090e;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            text-align: center;
+            margin-bottom: 25px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: #a5b4fc;
+        }
+
+        footer {
+            text-align: center;
+            padding: 30px 0;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border-color);
+            margin-top: 40px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <div class="badge"><i class="fa-solid fa-circle-check"></i> Verified Working Architecture</div>
+        <h1>4G CCTV Remote Streaming Architecture</h1>
+        <p>Complete Production Guide for UNV / IP Cameras, MediaMTX Linux Server (24/7 Service), and HTML5 Web Application Integration.</p>
+    </div>
+
+    <!-- System Architecture Diagram -->
+    <div class="diagram-container">
+        [ Remote 4G SIM Camera ] --- (RTMP Outbound / Port 1935) ---> [ MediaMTX Linux Server ] --- (WebRTC / Port 8889) ---> [ Web Application (viewer.php) ]
+    </div>
+
+    <!-- Section 1: Server Side -->
+    <div class="section-card">
+        <div class="section-header">
+            <h2><i class="fa-solid fa-server"></i> 1. Server Configuration (AlmaLinux / WHM / VPS)</h2>
+            <span style="font-size: 0.8rem; color: var(--accent-green);"><i class="fa-solid fa-bolt"></i> 24/7 Daemon</span>
+        </div>
+        <div class="section-body">
+            <div class="step-item">
+                <div class="step-title">Step 1.1: Install MediaMTX Binary</div>
+                <p style="color: var(--text-muted); font-size: 0.9rem;">Download and extract MediaMTX to <code>/opt/mediamtx</code> and place binary in system path.</p>
+                <div class="code-block">
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    <code>mkdir -p /opt/mediamtx && cd /opt/mediamtx
+wget https://github.com/bluenviron/mediamtx/releases/download/v1.9.0/mediamtx_v1.9.0_linux_amd64.tar.gz
+tar -zxvf mediamtx_v1.9.0_linux_amd64.tar.gz
+cp mediamtx /usr/local/bin/</code>
+                </div>
+            </div>
+
+            <div class="step-item">
+                <div class="step-title">Step 1.2: Create Systemd Service (Auto-Start on Boot)</div>
+                <p style="color: var(--text-muted); font-size: 0.9rem;">Ensures the stream server restarts automatically if the server reboots or encounters an error.</p>
+                <div class="code-block">
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    <code>cat << 'EOF' > /etc/systemd/system/mediamtx.service
+[Unit]
+Description=MediaMTX Live Streaming Server
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/mediamtx
+ExecStart=/usr/local/bin/mediamtx /opt/mediamtx/mediamtx.yml
+Restart=always
+RestartSec=5
+User=root
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+systemctl daemon-reload
+systemctl enable --now mediamtx</code>
+                </div>
+            </div>
+
+            <div class="step-item">
+                <div class="step-title">Step 1.3: Open Firewall Ports</div>
+                <p style="color: var(--text-muted); font-size: 0.9rem;">Opens RTMP ingest (1935), WebRTC player (8889), HLS (8888), and WebRTC UDP (8189).</p>
+                <div class="code-block">
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    <code># For Firewalld
+firewall-cmd --permanent --add-port=1935/tcp
+firewall-cmd --permanent --add-port=8889/tcp
+firewall-cmd --permanent --add-port=8888/tcp
+firewall-cmd --permanent --add-port=8189/udp
+firewall-cmd --reload
+
+# For CSF Firewall (if installed on WHM/cPanel)
+if [ -f /etc/csf/csf.conf ]; then
+    sed -i 's/TCP_IN = "/TCP_IN = "1935,8888,8889,/' /etc/csf/csf.conf
+    sed -i 's/UDP_IN = "/UDP_IN = "8189,/' /etc/csf/csf.conf
+    csf -r
+fi</code>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 2: Camera Configuration -->
+    <div class="section-card">
+        <div class="section-header">
+            <h2><i class="fa-solid fa-video"></i> 2. UNV / IP Camera Setup</h2>
+            <span style="font-size: 0.8rem; color: var(--accent-cyan);">Web Admin (192.168.8.x)</span>
+        </div>
+        <div class="section-body">
+            <table class="param-table">
+                <thead>
+                    <tr>
+                        <th>Menu Section</th>
+                        <th>Setting Parameter</th>
+                        <th>Recommended Value</th>
+                        <th>Why It Matters</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Video & Audio &rarr; Video</strong></td>
+                        <td>Video Compression</td>
+                        <td><strong>H.264</strong></td>
+                        <td>Broadest compatibility with HTML5 WebRTC players.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Video & Audio &rarr; Video</strong></td>
+                        <td>Resolution & Bitrate</td>
+                        <td><strong>1920x1080 @ 2048 Kbps (CBR)</strong></td>
+                        <td>Stable streaming over 4G SIM bandwidth.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Video & Audio &rarr; Video</strong></td>
+                        <td>I-Frame Interval (GOP)</td>
+                        <td><strong>50</strong> (2x Framerate)</td>
+                        <td>Fast stream startup without buffering delay.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Video & Audio &rarr; Video</strong></td>
+                        <td>U-Code / Smart Codec</td>
+                        <td><strong>Off</strong></td>
+                        <td>Proprietary compression must be off for standard RTMP.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Video & Audio &rarr; Audio</strong></td>
+                        <td>Audio Input</td>
+                        <td><strong>Off</strong> (or AAC if available)</td>
+                        <td>Avoids G.711 format sync dropouts.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Video & Audio &rarr; Media Stream</strong></td>
+                        <td>Destination IP</td>
+                        <td><strong>rtmp://earth.rechargingsolution.in:1935/live/camera1</strong></td>
+                        <td>Pushes video stream directly to your server.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Video & Audio &rarr; Media Stream</strong></td>
+                        <td>Protocol & Persistent</td>
+                        <td><strong>RTMP</strong> / <strong>Enable</strong></td>
+                        <td>Keeps stream connected 24/7 automatically.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Section 3: Web Application Integration (HTML / PHP) -->
+    <div class="section-card">
+        <div class="section-header">
+            <h2><i class="fa-solid fa-code"></i> 3. HTML5 Web Application Integration</h2>
+            <span style="font-size: 0.8rem; color: var(--accent-blue);">viewer.php</span>
+        </div>
+        <div class="section-body">
+            <div class="step-item">
+                <div class="step-title">Method A: Ultra-Low Latency WebRTC Player (Recommended &lt;0.2s Delay)</div>
+                <p style="color: var(--text-muted); font-size: 0.9rem;">Embed the MediaMTX WebRTC player directly in an iframe inside your web portal.</p>
+                <div class="code-block">
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    <code>&lt;div class="video-container" style="width: 100%; max-width: 900px; margin: 0 auto;"&gt;
+    &lt;iframe 
+        src="http://earth.rechargingsolution.in:8889/live/camera1" 
+        style="width: 100%; height: 500px; border: 1px solid #1f2937; border-radius: 12px;" 
+        allow="autoplay; fullscreen"&gt;
+    &lt;/iframe&gt;
+&lt;/div&gt;</code>
+                </div>
+            </div>
+
+            <div class="step-item">
+                <div class="step-title">Method B: Native HTML5 HLS Player (Video.js / Hls.js)</div>
+                <p style="color: var(--text-muted); font-size: 0.9rem;">For universal playback across all mobile browsers via HLS (.m3u8).</p>
+                <div class="code-block">
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    <code>&lt;script src="https://cdn.jsdelivr.net/npm/hls.js@latest"&gt;&lt;/script&gt;
+&lt;video id="videoPlayer" controls autoplay muted style="width: 100%; border-radius: 12px;"&gt;&lt;/video&gt;
+
+&lt;script&gt;
+  const video = document.getElementById('videoPlayer');
+  const hlsUrl = 'http://earth.rechargingsolution.in:8888/live/camera1/index.m3u8';
+  if (Hls.isSupported()) {
+    const hls = new Hls();
+    hls.loadSource(hlsUrl);
+    hls.attachMedia(video);
+  } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+    video.src = hlsUrl;
+  }
+&lt;/script&gt;</code>
+                </div>
+            </div>
+
+            <div class="note-box">
+                <i class="fa-solid fa-shield-halved"></i>
+                <div>
+                    <strong>Security Best Practice:</strong> Wrap your viewer inside your application's <code>requireAuth()</code> PIN authentication so only authorized users can view the stream.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 4: Maintenance Commands -->
+    <div class="section-card">
+        <div class="section-header">
+            <h2><i class="fa-solid fa-terminal"></i> 4. Useful Server Management Commands</h2>
+        </div>
+        <div class="section-body">
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                <code># Check streaming service status
+systemctl status mediamtx
+
+# View real-time live connection logs
+journalctl -u mediamtx -f
+
+# Restart the streaming service
+systemctl restart mediamtx</code>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        &copy; SandS CamGuard &bull; 4G CCTV & MediaMTX Production Setup Guide &bull; Generated for <code>earth.rechargingsolution.in</code>
+    </footer>
+</div>
+
+<script>
+function copyCode(btn) {
+    const code = btn.nextElementSibling.innerText;
+    function showCopied() {
+        btn.innerText = 'Copied!';
+        setTimeout(() => btn.innerText = 'Copy', 2000);
+    }
+
+    if (navigator?.clipboard?.writeText && window.isSecureContext) {
+        navigator.clipboard.writeText(code).then(showCopied).catch(fallback);
+    } else {
+        fallback();
+    }
+
+    function fallback() {
+        try {
+            const ta = document.createElement('textarea');
+            ta.value = code;
+            ta.style.position = 'fixed';
+            ta.style.left = '-9999px';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            showCopied();
+        } catch (e) {
+            console.error('Copy failed', e);
+        }
+    }
+}
+</script>
+
+</body>
+</html>
