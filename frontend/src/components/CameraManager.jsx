@@ -66,7 +66,7 @@ export default function CameraManager({ cameras, onOpenAddModal, onEditCamera, o
               <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#475569', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                 <th style={{ padding: '14px 18px' }}>Camera</th>
                 <th style={{ padding: '14px 18px' }}>Location</th>
-                <th style={{ padding: '14px 18px' }}>RTMP Ingest Address (Camera Setup)</th>
+                <th style={{ padding: '14px 18px' }}>Stream Ingest / RTSP Address</th>
                 <th style={{ padding: '14px 18px' }}>Resolution</th>
                 <th style={{ padding: '14px 18px' }}>Status</th>
                 <th style={{ padding: '14px 18px', textAlign: 'right' }}>Actions</th>
@@ -99,9 +99,20 @@ export default function CameraManager({ cameras, onOpenAddModal, onEditCamera, o
                         <Video size={18} />
                       </div>
                       <div>
-                        <div style={{ fontWeight: 600, color: '#0f172a' }}>{cam.name}</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ fontWeight: 600, color: '#0f172a' }}>{cam.name}</span>
+                          {cam.camera_type === 'onvif' ? (
+                            <span style={{ fontSize: '0.65rem', fontWeight: 700, padding: '1px 5px', borderRadius: '4px', backgroundColor: '#f3e8ff', color: '#7e22ce' }}>
+                              ONVIF
+                            </span>
+                          ) : (
+                            <span style={{ fontSize: '0.65rem', fontWeight: 700, padding: '1px 5px', borderRadius: '4px', backgroundColor: '#e0f2fe', color: '#0369a1' }}>
+                              RTMP
+                            </span>
+                          )}
+                        </div>
                         <div style={{ fontSize: '0.75rem', color: '#64748b', fontFamily: 'monospace' }}>
-                          Key: {cam.stream_key}
+                          {cam.camera_type === 'onvif' ? `${cam.onvif_host || 'ONVIF'}:${cam.onvif_port || 80}` : `Key: ${cam.stream_key}`}
                         </div>
                       </div>
                     </div>
@@ -115,36 +126,67 @@ export default function CameraManager({ cameras, onOpenAddModal, onEditCamera, o
                     </div>
                   </td>
 
-                  {/* RTMP Ingest URL with Copy Button */}
+                  {/* Stream Address (RTMP or RTSP) with Copy Button */}
                   <td style={{ padding: '14px 18px' }}>
-                    <div style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      backgroundColor: '#f1f5f9',
-                      padding: '5px 10px',
-                      borderRadius: '6px',
-                      border: '1px solid #e2e8f0',
-                      maxWidth: '380px'
-                    }}>
-                      <code style={{ fontSize: '0.78rem', color: '#0369a1', fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {cam.rtmp_ingest_url}
-                      </code>
-                      <button
-                        onClick={() => handleCopy(cam.id, cam.rtmp_ingest_url)}
-                        title="Copy RTMP Ingest Address"
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          cursor: 'pointer',
-                          color: copiedId === cam.id ? '#10b981' : '#64748b',
-                          display: 'flex',
-                          padding: '2px'
-                        }}
-                      >
-                        {copiedId === cam.id ? <Check size={14} /> : <Copy size={14} />}
-                      </button>
-                    </div>
+                    {cam.camera_type === 'onvif' ? (
+                      <div style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        backgroundColor: '#faf5ff',
+                        padding: '5px 10px',
+                        borderRadius: '6px',
+                        border: '1px solid #e9d5ff',
+                        maxWidth: '380px'
+                      }}>
+                        <code style={{ fontSize: '0.78rem', color: '#7e22ce', fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {cam.rtsp_display_url || cam.rtsp_url || `rtsp://${cam.onvif_host}:${cam.rtsp_port || 554}/${cam.rtsp_path || 'live/ch0'}`}
+                        </code>
+                        <button
+                          onClick={() => handleCopy(cam.id, cam.rtsp_url || `rtsp://${cam.onvif_host}:${cam.rtsp_port || 554}/${cam.rtsp_path || 'live/ch0'}`)}
+                          title="Copy RTSP Stream URL"
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            color: copiedId === cam.id ? '#10b981' : '#7e22ce',
+                            display: 'flex',
+                            padding: '2px'
+                          }}
+                        >
+                          {copiedId === cam.id ? <Check size={14} /> : <Copy size={14} />}
+                        </button>
+                      </div>
+                    ) : (
+                      <div style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        backgroundColor: '#f1f5f9',
+                        padding: '5px 10px',
+                        borderRadius: '6px',
+                        border: '1px solid #e2e8f0',
+                        maxWidth: '380px'
+                      }}>
+                        <code style={{ fontSize: '0.78rem', color: '#0369a1', fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {cam.rtmp_ingest_url}
+                        </code>
+                        <button
+                          onClick={() => handleCopy(cam.id, cam.rtmp_ingest_url)}
+                          title="Copy RTMP Ingest Address"
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            color: copiedId === cam.id ? '#10b981' : '#64748b',
+                            display: 'flex',
+                            padding: '2px'
+                          }}
+                        >
+                          {copiedId === cam.id ? <Check size={14} /> : <Copy size={14} />}
+                        </button>
+                      </div>
+                    )}
                   </td>
 
                   {/* Resolution */}

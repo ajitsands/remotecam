@@ -1,5 +1,5 @@
 import React from 'react';
-import { BookOpen, Check, Copy, Shield, Video, Server, ArrowRight, ShieldCheck } from 'lucide-react';
+import { BookOpen, Check, Copy, Shield, Video, Server, ArrowRight, ShieldCheck, Radio } from 'lucide-react';
 import { copyToClipboard } from '../utils/clipboard';
 
 export default function SetupGuideView({ user }) {
@@ -22,8 +22,76 @@ export default function SetupGuideView({ user }) {
           Camera Configuration Cheatsheet
         </h1>
         <p style={{ color: '#64748b', fontSize: '0.9rem' }}>
-          Exact step-by-step parameters for configuring Uniview (UNV), Hikvision, and Dahua 4G IP cameras.
+          Parameters for configuring 4G RTMP Ingest and ONVIF / RTSP Network Video Transmitters.
         </p>
+      </div>
+
+      {/* ONVIF IP Camera Setup Card (New in ONVIF V1.0) */}
+      <div style={{
+        backgroundColor: '#ffffff',
+        borderRadius: '16px',
+        border: '1px solid #e9d5ff',
+        padding: '24px',
+        marginBottom: '20px',
+        boxShadow: '0 2px 8px rgba(126, 34, 206, 0.05)'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+          <h2 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Shield size={18} style={{ color: '#7e22ce' }} />
+            <span>1. ONVIF & RTSP Camera Configuration Guide</span>
+          </h2>
+          <span style={{
+            fontSize: '0.7rem',
+            fontWeight: 700,
+            padding: '2px 8px',
+            borderRadius: '6px',
+            backgroundColor: '#f3e8ff',
+            color: '#7e22ce'
+          }}>
+            ONVIF V1.0
+          </span>
+        </div>
+
+        <p style={{ fontSize: '0.85rem', color: '#64748b', lineHeight: 1.5, marginBottom: '16px' }}>
+          To connect your IP cameras via ONVIF, ensure <b>ONVIF protocol is enabled</b> in the camera's web configuration interface and an <b>ONVIF user account</b> with Media/Admin privileges is created.
+        </p>
+
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem', marginBottom: '16px' }}>
+          <thead>
+            <tr style={{ backgroundColor: '#faf5ff', borderBottom: '1px solid #e9d5ff', textAlign: 'left', color: '#6b21a8' }}>
+              <th style={{ padding: '10px 14px' }}>Manufacturer</th>
+              <th style={{ padding: '10px 14px' }}>Default ONVIF Port</th>
+              <th style={{ padding: '10px 14px' }}>RTSP Port</th>
+              <th style={{ padding: '10px 14px' }}>Default RTSP Stream URI Pattern</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+              <td style={{ padding: '10px 14px', fontWeight: 600 }}>Uniview (UNV)</td>
+              <td style={{ padding: '10px 14px', color: '#7e22ce', fontWeight: 700 }}>80</td>
+              <td style={{ padding: '10px 14px', color: '#475569' }}>554</td>
+              <td style={{ padding: '10px 14px', fontFamily: 'monospace', color: '#0f172a' }}>rtsp://user:pass@ip:554/unicast/c1/s0/live</td>
+            </tr>
+            <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+              <td style={{ padding: '10px 14px', fontWeight: 600 }}>Hikvision</td>
+              <td style={{ padding: '10px 14px', color: '#7e22ce', fontWeight: 700 }}>80 / 8000</td>
+              <td style={{ padding: '10px 14px', color: '#475569' }}>554</td>
+              <td style={{ padding: '10px 14px', fontFamily: 'monospace', color: '#0f172a' }}>rtsp://user:pass@ip:554/Streaming/Channels/101</td>
+            </tr>
+            <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+              <td style={{ padding: '10px 14px', fontWeight: 600 }}>Dahua / Amcrest</td>
+              <td style={{ padding: '10px 14px', color: '#7e22ce', fontWeight: 700 }}>80 / 8080</td>
+              <td style={{ padding: '10px 14px', color: '#475569' }}>554</td>
+              <td style={{ padding: '10px 14px', fontFamily: 'monospace', color: '#0f172a' }}>rtsp://user:pass@ip:554/cam/realmonitor?channel=1&subtype=0</td>
+            </tr>
+            <tr>
+              <td style={{ padding: '10px 14px', fontWeight: 600 }}>Generic / Other</td>
+              <td style={{ padding: '10px 14px', color: '#7e22ce', fontWeight: 700 }}>80 / 8899 / 5000</td>
+              <td style={{ padding: '10px 14px', color: '#475569' }}>554</td>
+              <td style={{ padding: '10px 14px', fontFamily: 'monospace', color: '#0f172a' }}>rtsp://user:pass@ip:554/live/ch0</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
       {/* Main Parameters Table (Visible to Admin and Super Admin) */}
@@ -36,8 +104,8 @@ export default function SetupGuideView({ user }) {
         boxShadow: '0 2px 8px rgba(15, 23, 42, 0.04)'
       }}>
         <h2 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#0f172a', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Video size={18} style={{ color: '#0284c7' }} />
-          <span>1. UNV / IP Camera Web Interface (192.168.8.x)</span>
+          <Radio size={18} style={{ color: '#0284c7' }} />
+          <span>2. UNV 4G / RTMP Camera Web Interface (192.168.8.x)</span>
         </h2>
 
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>

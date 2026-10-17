@@ -64,6 +64,15 @@ function initializeSqliteTables($pdo) {
             webrtc_port INTEGER DEFAULT 8889,
             hls_port INTEGER DEFAULT 8888,
             resolution TEXT DEFAULT '1080p',
+            camera_type TEXT DEFAULT 'rtmp',
+            onvif_host TEXT,
+            onvif_port INTEGER DEFAULT 80,
+            onvif_username TEXT,
+            onvif_password TEXT,
+            rtsp_port INTEGER DEFAULT 554,
+            rtsp_path TEXT,
+            onvif_profile TEXT,
+            ptz_enabled INTEGER DEFAULT 0,
             status TEXT DEFAULT 'active',
             is_favorite INTEGER DEFAULT 0,
             notes TEXT,
@@ -80,6 +89,35 @@ function initializeSqliteTables($pdo) {
         );
     ");
 
+    // Dynamic column migration for existing SQLite databases
+    $existingCols = [];
+    $tableInfo = $pdo->query("PRAGMA table_info(cameras)")->fetchAll();
+    foreach ($tableInfo as $col) {
+        $existingCols[] = strtolower($col['name']);
+    }
+
+    $newCols = [
+        'camera_type' => "TEXT DEFAULT 'rtmp'",
+        'onvif_host' => "TEXT",
+        'onvif_port' => "INTEGER DEFAULT 80",
+        'onvif_username' => "TEXT",
+        'onvif_password' => "TEXT",
+        'rtsp_port' => "INTEGER DEFAULT 554",
+        'rtsp_path' => "TEXT",
+        'onvif_profile' => "TEXT",
+        'ptz_enabled' => "INTEGER DEFAULT 0"
+    ];
+
+    foreach ($newCols as $colName => $colDef) {
+        if (!in_array($colName, $existingCols)) {
+            try {
+                $pdo->exec("ALTER TABLE cameras ADD COLUMN {$colName} {$colDef}");
+            } catch (Exception $e) {
+                // Column might already exist
+            }
+        }
+    }
+
     // Insert demo user and camera if empty
     $checkUser = $pdo->query("SELECT COUNT(*) FROM users")->fetchColumn();
     if ($checkUser == 0) {
@@ -87,8 +125,9 @@ function initializeSqliteTables($pdo) {
         $stmt->execute(['admin', 'admin@sandslab.com', password_hash('admin123', PASSWORD_BCRYPT), 'SanDS Administrator', 'admin']);
         
         $userId = $pdo->lastInsertId();
-        $stmtCam = $pdo->prepare("INSERT INTO cameras (user_id, name, location, stream_key, server_host, rtmp_port, webrtc_port, hls_port, resolution, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmtCam->execute([$userId, '4G UNV Camera 1', 'Office Remote Node', 'camera1', 'camera.sandslab.com', 1935, 8889, 8888, '1080p', 'active']);
-        $stmtCam->execute([$userId, '4G Warehouse Cam 2', 'Storage Area Beta', 'camera2', 'camera.sandslab.com', 1935, 8889, 8888, '1080p', 'active']);
+        $stmtCam = $pdo->prepare("INSERT INTO cameras (user_id, name, location, stream_key, server_host, rtmp_port, webrtc_port, hls_port, resolution, camera_type, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmtCam->execute([$userId, '4G UNV Camera 1', 'Office Remote Node', 'camera1', 'camera.sandslab.com', 1935, 8889, 8888, '1080p', 'rtmp', 'active']);
+        $stmtCam->execute([$userId, '4G Warehouse Cam 2', 'Storage Area Beta', 'camera2', 'camera.sandslab.com', 1935, 8889, 8888, '1080p', 'rtmp', 'active']);
+        $stmtCam->execute([$userId, 'ONVIF IP Dome Cam', 'Front Entrance', 'onvif_cam1', '192.168.1.100', 1935, 8889, 8888, '1080p', 'onvif', 'active']);
     }
 }

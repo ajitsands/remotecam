@@ -40,6 +40,26 @@ const INITIAL_CAMERAS = [
     rtmp_ingest_url: 'rtmp://earth.rechargingsolution.in:1935/live/camera2',
     webrtc_play_url: 'http://earth.rechargingsolution.in:8889/live/camera2',
     hls_play_url: 'http://earth.rechargingsolution.in:8888/live/camera2/index.m3u8'
+  },
+  {
+    id: 3,
+    name: 'ONVIF Main Gate Dome',
+    location: 'Perimeter Gate 1',
+    camera_type: 'onvif',
+    stream_key: 'camera3',
+    server_host: 'earth.rechargingsolution.in',
+    onvif_host: '192.168.1.108',
+    onvif_port: 80,
+    onvif_username: 'admin',
+    rtsp_port: 554,
+    rtsp_path: 'live/ch0',
+    ptz_enabled: true,
+    resolution: '1080p',
+    status: 'active',
+    rtmp_ingest_url: 'rtmp://earth.rechargingsolution.in:1935/live/camera3',
+    webrtc_play_url: 'http://earth.rechargingsolution.in:8889/live/camera3',
+    hls_play_url: 'http://earth.rechargingsolution.in:8888/live/camera3/index.m3u8',
+    rtsp_url: 'rtsp://admin:••••••@192.168.1.108:554/live/ch0'
   }
 ];
 
@@ -107,13 +127,16 @@ export default function App() {
     const host = cameraData.server_host || 'camera.sandslab.com';
     const key = cameraData.stream_key || 'camera1';
 
+    const isTypeOnvif = cameraData.camera_type === 'onvif' || cameraData.camera_type === 'rtsp';
     const enriched = {
       ...cameraData,
+      camera_type: cameraData.camera_type || 'rtmp',
       server_host: host,
       stream_key: key,
       rtmp_ingest_url: `rtmp://${host}:1935/live/${key}`,
       webrtc_play_url: `http://${host}:8889/live/${key}`,
-      hls_play_url: `http://${host}:8888/live/${key}/index.m3u8`
+      hls_play_url: `http://${host}:8888/live/${key}/index.m3u8`,
+      rtsp_url: isTypeOnvif ? `rtsp://${cameraData.onvif_username ? encodeURIComponent(cameraData.onvif_username) + '@' : ''}${cameraData.onvif_host || host}:${cameraData.rtsp_port || 554}/${cameraData.rtsp_path || 'live/ch0'}` : undefined
     };
 
     if (cameraData.id && typeof cameraData.id === 'number' && cameraData.id < 1000000000) {
