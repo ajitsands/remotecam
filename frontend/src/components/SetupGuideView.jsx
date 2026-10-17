@@ -204,11 +204,69 @@ export default function SetupGuideView({ user }) {
               boxShadow: '0 2px 6px rgba(2, 132, 199, 0.3)'
             }}
           >
-            <span>Open Full Guide</span>
+            <span>MediaMTX Guide</span>
             <ArrowRight size={15} />
           </a>
         </div>
       )}
+
+      {/* UNV 4G Camera & ONVIF Dedicated Guide (Available to All Admins) */}
+      <div style={{
+        backgroundColor: '#faf5ff',
+        border: '1px solid #e9d5ff',
+        borderRadius: '16px',
+        padding: '20px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: '12px',
+        marginTop: '16px',
+        boxShadow: '0 2px 6px rgba(126, 34, 206, 0.08)'
+      }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+            <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#7e22ce', margin: 0 }}>
+              UNV 4G Camera (IPC2A14LP-ADF40KC-4G-E) Master Guide
+            </h3>
+            <span style={{
+              fontSize: '0.62rem',
+              fontWeight: 800,
+              padding: '2px 7px',
+              borderRadius: '4px',
+              backgroundColor: '#7e22ce',
+              color: '#ffffff',
+              letterSpacing: '0.5px'
+            }}>
+              NEW HTML GUIDE
+            </span>
+          </div>
+          <p style={{ fontSize: '0.85rem', color: '#6b21a8', margin: 0 }}>
+            Interactive setup guide with RTSP calculator, ONVIF Device Manager troubleshooting, and 4G remote deployment.
+          </p>
+        </div>
+        <a
+          href="../unv_4g_camera_onvif_setup_guide.html"
+          target="_blank"
+          rel="noreferrer"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '9px 16px',
+            borderRadius: '8px',
+            backgroundColor: '#7e22ce',
+            color: '#fff',
+            textDecoration: 'none',
+            fontSize: '0.85rem',
+            fontWeight: 600,
+            boxShadow: '0 2px 6px rgba(126, 34, 206, 0.3)'
+          }}
+        >
+          <span>Open UNV 4G Guide</span>
+          <ArrowRight size={15} />
+        </a>
+      </div>
 
     </div>
   );

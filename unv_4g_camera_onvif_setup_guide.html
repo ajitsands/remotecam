@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UNV 4G Camera (IPC2A14LP-ADF40KC-4G-E) - ONVIF & Remote Access Master Guide</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-base: #06090f;
+            --bg-card: #0f172a;
+            --bg-card-inner: #1e293b;
+            --bg-card-header: #141e33;
+            --border: rgba(255, 255, 255, 0.08);
+            --border-highlight: rgba(56, 189, 248, 0.3);
+            --accent-cyan: #38bdf8;
+            --accent-blue: #0284c7;
+            --accent-purple: #a855f7;
+            --accent-green: #22c55e;
+            --accent-amber: #f59e0b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --code-bg: #020617;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            line-height: 1.65;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1080px;
+            margin: 0 auto;
+        }
+
+        /* Hero Header */
+        .header {
+            position: relative;
+            background: radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.15) 0%, rgba(168, 85, 247, 0.08) 50%, transparent 80%),
+                        linear-gradient(180deg, #0f172a 0%, #06090f 100%);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 45px 35px;
+            text-align: center;
+            margin-bottom: 35px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 20%;
+            right: 20%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--accent-cyan), var(--accent-purple), transparent);
+        }
+
+        .badges-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 18px;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 999px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+        }
+
+        .badge-green {
+            background: rgba(34, 197, 94, 0.12);
+            color: #4ade80;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .badge-purple {
+            background: rgba(168, 85, 247, 0.12);
+            color: #c084fc;
+            border: 1px solid rgba(168, 85, 247, 0.3);
+        }
+
+        .badge-cyan {
+            background: rgba(56, 189, 248, 0.12);
+            color: #38bdf8;
+            border: 1px solid rgba(56, 189, 248, 0.3);
+        }
+
+        .header h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.3rem;
+            font-weight: 900;
+            letter-spacing: -0.5px;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, #ffffff 40%, #7dd3fc 80%, #c084fc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header p {
+            color: var(--text-muted);
+            font-size: 1.05rem;
+            max-width: 780px;
+            margin: 0 auto 20px auto;
+        }
+
+        .camera-id-strip {
+            display: inline-flex;
+            align-items: center;
+            gap: 14px;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--border);
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-size: 0.88rem;
+            font-family: 'JetBrains Mono', monospace;
+            color: #e2e8f0;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .camera-id-strip span b {
+            color: var(--accent-cyan);
+        }
+
+        /* Card Layout */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            margin-bottom: 30px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            transition: border-color 0.2s;
+        }
+
+        .card:hover {
+            border-color: var(--border-highlight);
+        }
+
+        .card-header {
+            background: var(--bg-card-header);
+            padding: 20px 26px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border);
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .card-header h2 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #ffffff;
+        }
+
+        .card-header h2 i {
+            color: var(--accent-cyan);
+        }
+
+        .card-body {
+            padding: 28px;
+        }
+
+        /* Explainer Callout Box */
+        .callout-box {
+            background: rgba(30, 41, 59, 0.6);
+            border-left: 4px solid var(--accent-cyan);
+            border-radius: 0 12px 12px 0;
+            padding: 18px 22px;
+            margin-bottom: 24px;
+            font-size: 0.92rem;
+            color: #cbd5e1;
+        }
+
+        .callout-box.purple {
+            border-left-color: var(--accent-purple);
+            background: rgba(88, 28, 135, 0.12);
+        }
+
+        .callout-box.green {
+            border-left-color: var(--accent-green);
+            background: rgba(20, 83, 45, 0.15);
+        }
+
+        .callout-box.amber {
+            border-left-color: var(--accent-amber);
+            background: rgba(120, 53, 15, 0.15);
+        }
+
+        .callout-box h4 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Steps */
+        .step-block {
+            padding-left: 24px;
+            border-left: 2px solid rgba(56, 189, 248, 0.3);
+            margin-bottom: 26px;
+            position: relative;
+        }
+
+        .step-block:last-child {
+            margin-bottom: 0;
+        }
+
+        .step-block::before {
+            content: '';
+            position: absolute;
+            left: -8px;
+            top: 4px;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--accent-cyan);
+            box-shadow: 0 0 12px var(--accent-cyan);
+        }
+
+        .step-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: #f8fafc;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .step-desc {
+            color: var(--text-muted);
+            font-size: 0.92rem;
+            margin-bottom: 14px;
+        }
+
+        /* Code Blocks */
+        .code-box {
+            background: var(--code-bg);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 14px 18px;
+            margin: 12px 0 18px 0;
+            position: relative;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.88rem;
+            color: #38bdf8;
+            overflow-x: auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .code-box code {
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .copy-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #e2e8f0;
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .copy-btn:hover {
+            background: var(--accent-blue);
+            color: #fff;
+            box-shadow: 0 0 10px rgba(2, 132, 199, 0.5);
+        }
+
+        /* Tables */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+            font-size: 0.9rem;
+        }
+
+        .data-table th, .data-table td {
+            padding: 12px 16px;
+            border: 1px solid var(--border);
+            text-align: left;
+        }
+
+        .data-table th {
+            background: rgba(255, 255, 255, 0.04);
+            color: #e2e8f0;
+            font-weight: 700;
+            font-size: 0.82rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .data-table td {
+            color: #94a3b8;
+        }
+
+        .data-table td strong {
+            color: #f8fafc;
+        }
+
+        .data-table td code {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--accent-cyan);
+            background: rgba(56, 189, 248, 0.08);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.82rem;
+        }
+
+        /* Comparison Grid */
+        .grid-2 {
+            display: grid;
+            grid-templateColumns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+            .header h1 {
+                font-size: 1.8rem;
+            }
+        }
+
+        .sub-card {
+            background: var(--bg-card-inner);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 22px;
+        }
+
+        .sub-card h3 {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Interactive Checklist */
+        .checklist-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 10px 14px;
+            border-radius: 10px;
+            background: rgba(15, 23, 42, 0.5);
+            margin-bottom: 8px;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .checklist-item:hover {
+            background: rgba(30, 41, 59, 0.8);
+        }
+
+        .checklist-item input {
+            margin-top: 4px;
+            width: 17px;
+            height: 17px;
+            accent-color: var(--accent-cyan);
+            cursor: pointer;
+        }
+
+        /* Interactive RTSP Calculator */
+        .calc-box {
+            background: #020617;
+            border: 1px solid var(--border-highlight);
+            border-radius: 16px;
+            padding: 20px;
+            margin-top: 15px;
+        }
+
+        .calc-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 14px;
+            margin-bottom: 14px;
+        }
+
+        .calc-field label {
+            display: block;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: #94a3b8;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        .calc-field input, .calc-field select {
+            width: 100%;
+            padding: 9px 12px;
+            border-radius: 8px;
+            border: 1px solid #334155;
+            background: #0f172a;
+            color: #f8fafc;
+            font-size: 0.88rem;
+            font-family: 'JetBrains Mono', monospace;
+            outline: none;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 35px 0 10px 0;
+            border-top: 1px solid var(--border);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        /* Print styles */
+        @media print {
+            body {
+                background: #fff;
+                color: #000;
+                padding: 10px;
+            }
+            .card, .header {
+                box-shadow: none;
+                border: 1px solid #ccc;
+                background: #fff;
+                color: #000;
+            }
+            .copy-btn {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <!-- Top Hero Header -->
+    <div class="header">
+        <div class="badges-row">
+            <span class="badge badge-green"><i class="fa-solid fa-circle-check"></i> ONVIF Profile S/G/T Verified</span>
+            <span class="badge badge-purple"><i class="fa-solid fa-sim-card"></i> 4G LTE ColorHunter</span>
+            <span class="badge badge-cyan"><i class="fa-solid fa-bolt"></i> Ultra-Low Latency WebRTC</span>
+        </div>
+        <h1>UNV 4G Camera Setup & Remote ONVIF Guide</h1>
+        <p>Complete deployment blueprint for connecting your Uniview 4G SIM Camera locally in ONVIF Device Manager and remotely via Cloud Stream & EZStation.</p>
+        
+        <div class="camera-id-strip">
+            <span>Model: <b>Uniview IPC2A14LP-ADF40KC-4G-E</b></span>
+            <span>Local IP: <b>192.168.100.113</b></span>
+            <span>Serial No: <b>210235C8PT32SC000040</b></span>
+            <span>Lens: <b>4MP / 4.0mm</b></span>
+        </div>
+    </div>
+
+    <!-- Section 1: The Core 4G Networking Reality -->
+    <div class="card">
+        <div class="card-header">
+            <h2><i class="fa-solid fa-satellite-dish"></i> 1. The Core 4G SIM Networking Reality</h2>
+            <span style="font-size: 0.8rem; color: var(--accent-cyan); font-weight: 600;">Crucial Architecture Knowledge</span>
+        </div>
+        <div class="card-body">
+            <div class="callout-box purple">
+                <h4><i class="fa-solid fa-triangle-exclamation"></i> Why Remote ONVIF Fails On Standard SIM Cards</h4>
+                When your camera is powered by a standard 4G SIM card (Airtel, Jio, Vi, AT&T), mobile telecom towers place the SIM behind <b>Carrier-Grade NAT (CGNAT)</b>. The SIM card <b>does NOT get a public, routable IP</b>, and all inbound traffic to port 80/554 is blocked by cellular firewalls.
+            </div>
+
+            <div class="grid-2">
+                <div class="sub-card">
+                    <h3><i class="fa-solid fa-network-wired" style="color: #4ade80;"></i> Local Network Mode (Current)</h3>
+                    <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 12px;">
+                        Camera is connected to your local router with IP <code>192.168.100.113</code>.
+                    </p>
+                    <ul style="padding-left: 20px; font-size: 0.85rem; color: #cbd5e1; line-height: 1.7;">
+                        <li>ONVIF Device Manager connects <b>instantly</b> on port <code>80</code>.</li>
+                        <li>RTSP stream plays directly via <code>rtsp://192.168.100.113:554/</code>.</li>
+                        <li>Only accessible while your laptop is on the <b>same local Wi-Fi / LAN</b>.</li>
+                    </ul>
+                </div>
+
+                <div class="sub-card">
+                    <h3><i class="fa-solid fa-tower-cell" style="color: #38bdf8;"></i> Remote 4G SIM Mode (Target)</h3>
+                    <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 12px;">
+                        Camera sits at a remote site with only a 4G SIM card and 12V DC power.
+                    </p>
+                    <ul style="padding-left: 20px; font-size: 0.85rem; color: #cbd5e1; line-height: 1.7;">
+                        <li>Cannot connect inwards directly without a VPN or Static APN.</li>
+                        <li><b>Camera pushes video OUTWARD</b> to your cloud server via RTMP.</li>
+                        <li>Accessible anywhere in the world through your <b>Web Portal</b> or <b>EZStation</b>.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 2: Local ONVIF Device Manager Setup -->
+    <div class="card">
+        <div class="card-header">
+            <h2><i class="fa-solid fa-laptop-code"></i> 2. Local ONVIF Connection (Verified Working)</h2>
+            <span style="font-size: 0.8rem; color: var(--accent-green); font-weight: 700;"><i class="fa-solid fa-check"></i> Always ON by Default</span>
+        </div>
+        <div class="card-body">
+            <div class="callout-box green">
+                <h4><i class="fa-solid fa-circle-check"></i> Why There Is No "Enable ONVIF" Button on UNV Cameras</h4>
+                Unlike Hikvision cameras which have an ONVIF toggle and a separate user list, <b>Uniview cameras have ONVIF active 24/7 by default</b>. The primary <code>admin</code> user is automatically the ONVIF administrator using the exact same password you use for the camera web interface.
+            </div>
+
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Parameter</th>
+                        <th>Value for ONVIF Device Manager (ODM)</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Device Service URI</strong></td>
+                        <td><code>http://192.168.100.113/onvif/device_service</code></td>
+                        <td>Enter in ODM's <b>+ Add</b> dialog at bottom-left</td>
+                    </tr>
+                    <tr>
+                        <td><strong>HTTP / ONVIF Port</strong></td>
+                        <td><code>80</code></td>
+                        <td>Default UNV HTTP port</td>
+                    </tr>
+                    <tr>
+                        <td><strong>RTSP Video Port</strong></td>
+                        <td><code>554</code></td>
+                        <td>Used by ODM for live stream playback</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Username</strong></td>
+                        <td><code>admin</code></td>
+                        <td>Standard camera account</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Password</strong></td>
+                        <td><em>Your camera login password</em></td>
+                        <td>Same as <code>http://192.168.100.113</code> login</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Direct RTSP Stream</strong></td>
+                        <td><code>rtsp://admin:PASSWORD@192.168.100.113:554/unicast/c1/s0/live</code></td>
+                        <td>Primary 4MP stream for VLC / NVR</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="step-block" style="margin-top: 24px;">
+                <div class="step-title">Quick ODM Connection Steps:</div>
+                <div class="step-desc">
+                    1. Open <b>ONVIF Device Manager</b> &rarr; Enter <code>admin</code> and your password at the top-left &rarr; Click <b>Log in</b>.<br>
+                    2. Click <b>+ Add</b> (bottom-left) &rarr; Paste: <code>http://192.168.100.113/onvif/device_service</code> &rarr; Click <b>Apply</b>.<br>
+                    3. Click on the camera in the list &rarr; Click <b>Live video</b>.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 3: Remote Access Solutions Over 4G SIM -->
+    <div class="card">
+        <div class="card-header">
+            <h2><i class="fa-solid fa-globe"></i> 3. Remote Access Methods Over 4G SIM Card</h2>
+            <span style="font-size: 0.8rem; color: var(--accent-purple); font-weight: 600;">Pick Your Preferred Workflow</span>
+        </div>
+        <div class="card-body">
+
+            <!-- Method A: Cloud WebRTC & RTMP -->
+            <div class="step-block">
+                <div class="step-title" style="color: #38bdf8;">
+                    <i class="fa-solid fa-cloud-arrow-up"></i> Method A: Cloud RTMP & WebRTC (Recommended for Web Portal)
+                </div>
+                <div class="step-desc">
+                    The camera pushes video outbound 24/7 over the 4G SIM to your MediaMTX server. You view it in real time from any browser with sub-0.2s latency.
+                </div>
+
+                <div class="callout-box">
+                    <h4>Camera Web Interface Setting:</h4>
+                    Navigate to <b>Setup &rarr; Video & Audio &rarr; Media Stream</b> (or <b>Network &rarr; RTMP</b>) inside <code>http://192.168.100.113</code>:
+                </div>
+
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Field Name</th>
+                            <th>Value</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>RTMP Ingest Destination</strong></td>
+                            <td><code>rtmp://earth.rechargingsolution.in:1935/live/camera1</code></td>
+                            <td>
+                                <button class="copy-btn" onclick="copyText('rtmp://earth.rechargingsolution.in:1935/live/camera1')">
+                                    <i class="fa-solid fa-copy"></i> Copy
+                                </button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Video Compression</strong></td>
+                            <td><code>H.264</code></td>
+                            <td>Required for HTML5 browser compatibility</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Bitrate & Resolution</strong></td>
+                            <td><code>1920x1080 @ 2048 Kbps CBR</code></td>
+                            <td>Optimal for 4G cellular data stability</td>
+                        </tr>
+                        <tr>
+                            <td><strong>I-Frame Interval (GOP)</strong></td>
+                            <td><code>50</code></td>
+                            <td>Enables instant video start when user connects</td>
+                        </tr>
+                        <tr>
+                            <td><strong>U-Code / Smart Codec</strong></td>
+                            <td><code>OFF</code></td>
+                            <td>Proprietary codecs must be disabled for RTMP</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="code-box">
+                    <code>Local Web Player: http://localhost:3031/
+Production Web Player: https://remote.sandslab.com/webcam/viewer.php</code>
+                    <button class="copy-btn" onclick="copyText('http://localhost:3031/')"><i class="fa-solid fa-copy"></i> Copy</button>
+                </div>
+            </div>
+
+            <!-- Method B: Uniview EZStation Desktop -->
+            <div class="step-block">
+                <div class="step-title" style="color: #c084fc;">
+                    <i class="fa-solid fa-desktop"></i> Method B: Uniview EZStation Desktop Software (Official P2P VMS)
+                </div>
+                <div class="step-desc">
+                    Uniview provides a dedicated desktop software (EZStation) that connects directly to the 4G camera over UNV’s secure P2P cloud relay without needing any static IP or open ports.
+                </div>
+
+                <div class="grid-2">
+                    <div class="sub-card">
+                        <h4 style="color: #fff; margin-bottom: 8px;"><i class="fa-solid fa-sliders"></i> 1. On Camera Web Admin:</h4>
+                        <ol style="padding-left: 20px; font-size: 0.85rem; color: #cbd5e1; line-height: 1.8;">
+                            <li>Go to <b>Network &rarr; Platform Access</b>.</li>
+                            <li>Select <b>EZCloud</b>.</li>
+                            <li>Check <b>Enable</b> & ensure status shows <b>Online</b>.</li>
+                            <li>Note down your <b>Register Code</b> or Cloud ID: <br><code style="color: var(--accent-cyan);">210235C8PT32SC000040</code></li>
+                        </ol>
+                    </div>
+
+                    <div class="sub-card">
+                        <h4 style="color: #fff; margin-bottom: 8px;"><i class="fa-solid fa-download"></i> 2. On Your Remote PC:</h4>
+                        <ol style="padding-left: 20px; font-size: 0.85rem; color: #cbd5e1; line-height: 1.8;">
+                            <li>Download <b>Uniview EZStation</b> for Windows/Mac.</li>
+                            <li>Open EZStation &rarr; Log in with your <b>EZCloud</b> account.</li>
+                            <li>Click <b>Device Management &rarr; Add Cloud Device</b>.</li>
+                            <li>Enter the Register Code: <code>210235C8PT32SC000040</code>.</li>
+                            <li>View live 4K/1080p stream with full PTZ controls!</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Method C: Remote RTSP Relay for ONVIF Device Manager -->
+            <div class="step-block">
+                <div class="step-title" style="color: #4ade80;">
+                    <i class="fa-solid fa-network-wired"></i> Method C: Cloud RTSP Feed in ONVIF Device Manager / VMS
+                </div>
+                <div class="step-desc">
+                    Your MediaMTX cloud server (<code>earth.rechargingsolution.in</code>) automatically converts the 4G camera's RTMP broadcast into an RTSP stream on port <code>8554</code>. You can plug this directly into remote VMS software or VLC:
+                </div>
+
+                <div class="code-box">
+                    <code>rtsp://earth.rechargingsolution.in:8554/live/camera1</code>
+                    <button class="copy-btn" onclick="copyText('rtsp://earth.rechargingsolution.in:8554/live/camera1')"><i class="fa-solid fa-copy"></i> Copy RTSP</button>
+                </div>
+            </div>
+
+            <!-- Method D: Static IP SIM -->
+            <div class="step-block">
+                <div class="step-title" style="color: #f59e0b;">
+                    <i class="fa-solid fa-sim-card"></i> Method D: Commercial IoT SIM Card with Public Static IP
+                </div>
+                <div class="step-desc">
+                    If you specifically want ONVIF Device Manager on your PC to connect to the raw camera IP over the cellular network:
+                </div>
+                <ul style="padding-left: 20px; font-size: 0.88rem; color: #cbd5e1; line-height: 1.8;">
+                    <li>Obtain an <b>IoT / M2M SIM card</b> with a Static Public IP APN from your telecom carrier (Airtel, Jio, Vodafone).</li>
+                    <li>Inside <code>http://192.168.100.113</code>, go to <b>Network &rarr; Mobile Network</b> and set the custom APN.</li>
+                    <li>In ONVIF Device Manager, enter: <code>http://&lt;STATIC_PUBLIC_IP&gt;:80/onvif/device_service</code>.</li>
+                </ul>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Section 4: Interactive RTSP URL Generator -->
+    <div class="card">
+        <div class="card-header">
+            <h2><i class="fa-solid fa-calculator"></i> 4. Interactive UNV RTSP Stream Generator</h2>
+            <span style="font-size: 0.8rem; color: var(--accent-cyan); font-weight: 600;">Custom Stream Builder</span>
+        </div>
+        <div class="card-body">
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 15px;">
+                Generate customized RTSP stream links for UNV Main Stream, Sub Stream, or Mobile Stream:
+            </p>
+
+            <div class="calc-box">
+                <div class="calc-row">
+                    <div class="calc-field">
+                        <label>Camera IP / Host</label>
+                        <input type="text" id="calcIp" value="192.168.100.113" oninput="updateRtspPreview()">
+                    </div>
+                    <div class="calc-field">
+                        <label>RTSP Port</label>
+                        <input type="number" id="calcPort" value="554" oninput="updateRtspPreview()">
+                    </div>
+                    <div class="calc-field">
+                        <label>Username</label>
+                        <input type="text" id="calcUser" value="admin" oninput="updateRtspPreview()">
+                    </div>
+                    <div class="calc-field">
+                        <label>Password</label>
+                        <input type="password" id="calcPass" placeholder="Your Password" oninput="updateRtspPreview()">
+                    </div>
+                    <div class="calc-field">
+                        <label>Stream Quality</label>
+                        <select id="calcStream" onchange="updateRtspPreview()">
+                            <option value="unicast/c1/s0/live">Main Stream (4MP High Quality)</option>
+                            <option value="unicast/c1/s1/live">Sub Stream (D1 / Smooth Bandwidth)</option>
+                            <option value="unicast/c1/s2/live">Third Stream (Mobile Low Bitrate)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="code-box" style="margin-bottom: 0;">
+                    <code id="rtspPreview">rtsp://admin:••••••@192.168.100.113:554/unicast/c1/s0/live</code>
+                    <button class="copy-btn" onclick="copyGeneratedRtsp()"><i class="fa-solid fa-copy"></i> Copy Stream URL</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 5: Pre-Flight Deployment Checklist -->
+    <div class="card">
+        <div class="card-header">
+            <h2><i class="fa-solid fa-clipboard-check"></i> 5. Deployment Pre-Flight Checklist</h2>
+            <span style="font-size: 0.8rem; color: var(--accent-green); font-weight: 700;">Check Before Unplugging LAN</span>
+        </div>
+        <div class="card-body">
+            <div class="checklist-item" onclick="toggleCheck(this)">
+                <input type="checkbox">
+                <div>
+                    <strong style="color: #fff;">1. Tested ONVIF in ONVIF Device Manager locally:</strong>
+                    <div style="font-size: 0.82rem; color: #94a3b8;">Verified that <code>http://192.168.100.113/onvif/device_service</code> works and live video renders.</div>
+                </div>
+            </div>
+
+            <div class="checklist-item" onclick="toggleCheck(this)">
+                <input type="checkbox">
+                <div>
+                    <strong style="color: #fff;">2. RTMP Destination IP Configured:</strong>
+                    <div style="font-size: 0.82rem; color: #94a3b8;">Set to <code>rtmp://earth.rechargingsolution.in:1935/live/camera1</code> with H.264 & 2048 Kbps CBR.</div>
+                </div>
+            </div>
+
+            <div class="checklist-item" onclick="toggleCheck(this)">
+                <input type="checkbox">
+                <div>
+                    <strong style="color: #fff;">3. Disabled Proprietary U-Code:</strong>
+                    <div style="font-size: 0.82rem; color: #94a3b8;">Set U-Code to OFF in <b>Setup &rarr; Video</b> to prevent stream stuttering on standard players.</div>
+                </div>
+            </div>
+
+            <div class="checklist-item" onclick="toggleCheck(this)">
+                <input type="checkbox">
+                <div>
+                    <strong style="color: #fff;">4. 4G SIM Card Signal Verified:</strong>
+                    <div style="font-size: 0.82rem; color: #94a3b8;">Checked <b>Network &rarr; Mobile Network</b> & confirmed 4G signal bars and APN status are active.</div>
+                </div>
+            </div>
+
+            <div class="checklist-item" onclick="toggleCheck(this)">
+                <input type="checkbox">
+                <div>
+                    <strong style="color: #fff;">5. Saved EZCloud Register Code:</strong>
+                    <div style="font-size: 0.82rem; color: #94a3b8;">Copied Register Code <code>210235C8PT32SC000040</code> for EZStation / EZView app.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <p>SaNDS CamGuard &bull; Enterprise Multi-Camera Surveillance System &bull; Uniview 4G Deployment Guide</p>
+        <p style="margin-top: 5px; font-size: 0.78rem; color: #64748b;">Generated for Uniview IPC2A14LP-ADF40KC-4G-E &bull; Branch: ONVIF-V1.0</p>
+    </footer>
+
+</div>
+
+<script>
+    function copyText(text) {
+        navigator.clipboard.writeText(text).then(() => {
+            alert('Copied to clipboard:\n' + text);
+        }).catch(() => {
+            prompt('Copy this URL manually:', text);
+        });
+    }
+
+    function updateRtspPreview() {
+        const ip = document.getElementById('calcIp').value.trim() || '192.168.100.113';
+        const port = document.getElementById('calcPort').value.trim() || '554';
+        const user = document.getElementById('calcUser').value.trim();
+        const pass = document.getElementById('calcPass').value.trim();
+        const stream = document.getElementById('calcStream').value;
+
+        let auth = '';
+        if (user) {
+            auth = encodeURIComponent(user) + (pass ? ':' + '••••••' : '') + '@';
+        }
+
+        const preview = `rtsp://${auth}${ip}:${port}/${stream}`;
+        document.getElementById('rtspPreview').textContent = preview;
+    }
+
+    function copyGeneratedRtsp() {
+        const ip = document.getElementById('calcIp').value.trim() || '192.168.100.113';
+        const port = document.getElementById('calcPort').value.trim() || '554';
+        const user = document.getElementById('calcUser').value.trim();
+        const pass = document.getElementById('calcPass').value.trim();
+        const stream = document.getElementById('calcStream').value;
+
+        let auth = '';
+        if (user) {
+            auth = encodeURIComponent(user) + (pass ? ':' + encodeURIComponent(pass) : '') + '@';
+        }
+
+        const fullUrl = `rtsp://${auth}${ip}:${port}/${stream}`;
+        copyText(fullUrl);
+    }
+
+    function toggleCheck(el) {
+        const cb = el.querySelector('input[type="checkbox"]');
+        if (event.target !== cb) {
+            cb.checked = !cb.checked;
+        }
+    }
+</script>
+
+</body>
+</html>
