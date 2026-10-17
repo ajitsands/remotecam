@@ -16,30 +16,30 @@ const INITIAL_CAMERAS = [
     name: '4G UNV Camera 1',
     location: 'Remote Site Alpha',
     stream_key: 'camera1',
-    server_host: 'camera.sandslab.com',
+    server_host: 'earth.rechargingsolution.in',
     rtmp_port: 1935,
     webrtc_port: 8889,
     hls_port: 8888,
     resolution: '1080p',
     status: 'active',
-    rtmp_ingest_url: 'rtmp://camera.sandslab.com:1935/live/camera1',
-    webrtc_play_url: 'http://camera.sandslab.com:8889/live/camera1',
-    hls_play_url: 'http://camera.sandslab.com:8888/live/camera1/index.m3u8'
+    rtmp_ingest_url: 'rtmp://earth.rechargingsolution.in:1935/live/camera1',
+    webrtc_play_url: 'http://earth.rechargingsolution.in:8889/live/camera1',
+    hls_play_url: 'http://earth.rechargingsolution.in:8888/live/camera1/index.m3u8'
   },
   {
     id: 2,
     name: '4G Warehouse Cam 2',
     location: 'Storage Facility Beta',
     stream_key: 'camera2',
-    server_host: 'camera.sandslab.com',
+    server_host: 'earth.rechargingsolution.in',
     rtmp_port: 1935,
     webrtc_port: 8889,
     hls_port: 8888,
     resolution: '1080p',
     status: 'active',
-    rtmp_ingest_url: 'rtmp://camera.sandslab.com:1935/live/camera2',
-    webrtc_play_url: 'http://camera.sandslab.com:8889/live/camera2',
-    hls_play_url: 'http://camera.sandslab.com:8888/live/camera2/index.m3u8'
+    rtmp_ingest_url: 'rtmp://earth.rechargingsolution.in:1935/live/camera2',
+    webrtc_play_url: 'http://earth.rechargingsolution.in:8889/live/camera2',
+    hls_play_url: 'http://earth.rechargingsolution.in:8888/live/camera2/index.m3u8'
   }
 ];
 

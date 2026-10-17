@@ -7,6 +7,7 @@ import {
   ExternalLink,
   Info
 } from 'lucide-react';
+import { copyToClipboard } from '../utils/clipboard';
 
 export default function CameraCard({ camera, onEdit, onDelete, isSingleView }) {
   const [showInfo, setShowInfo] = useState(false);
@@ -21,7 +22,7 @@ export default function CameraCard({ camera, onEdit, onDelete, isSingleView }) {
   const rtmpIngest = `rtmp://${host}:1935/${streamPath}`;
 
   const handleCopyRtmp = () => {
-    navigator.clipboard.writeText(rtmpIngest);
+    copyToClipboard(rtmpIngest);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { X, Video, Server, MapPin, Key, Copy, Check } from 'lucide-react';
+import { copyToClipboard } from '../utils/clipboard';
 
 export default function AddCameraModal({ isOpen, onClose, onSave, editingCamera }) {
   const [name, setName] = useState('');
   const [location, setLocation] = useState('');
   const [streamKey, setStreamKey] = useState('');
-  const [serverHost, setServerHost] = useState('camera.sandslab.com');
+  const [serverHost, setServerHost] = useState('earth.rechargingsolution.in');
   const [resolution, setResolution] = useState('1080p');
   const [notes, setNotes] = useState('');
   const [copied, setCopied] = useState(false);
@@ -15,14 +16,14 @@ export default function AddCameraModal({ isOpen, onClose, onSave, editingCamera 
       setName(editingCamera.name || '');
       setLocation(editingCamera.location || '');
       setStreamKey(editingCamera.stream_key || '');
-      setServerHost(editingCamera.server_host || 'camera.sandslab.com');
+      setServerHost(editingCamera.server_host || 'earth.rechargingsolution.in');
       setResolution(editingCamera.resolution || '1080p');
       setNotes(editingCamera.notes || '');
     } else {
       setName('');
       setLocation('Main Site');
       setStreamKey(`camera${Math.floor(Math.random() * 900) + 100}`);
-      setServerHost('camera.sandslab.com');
+      setServerHost('earth.rechargingsolution.in');
       setResolution('1080p');
       setNotes('');
     }
@@ -46,7 +47,7 @@ export default function AddCameraModal({ isOpen, onClose, onSave, editingCamera 
   };
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(generatedRtmpUrl);
+    copyToClipboard(generatedRtmpUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

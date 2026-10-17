@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { Plus, Edit2, Trash2, Copy, Check, ExternalLink, Video, Shield, MapPin } from 'lucide-react';
+import { copyToClipboard } from '../utils/clipboard';
 
 export default function CameraManager({ cameras, onOpenAddModal, onEditCamera, onDeleteCamera }) {
   const [copiedId, setCopiedId] = useState(null);
 
   const handleCopy = (id, text) => {
-    navigator.clipboard.writeText(text);
+    copyToClipboard(text);
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
   };

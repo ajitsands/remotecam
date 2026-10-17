@@ -1,5 +1,6 @@
 import React from 'react';
 import { BookOpen, Check, Copy, Shield, Video, Server, ArrowRight, ShieldCheck } from 'lucide-react';
+import { copyToClipboard } from '../utils/clipboard';
 
 export default function SetupGuideView({ user }) {
   const [copied, setCopied] = React.useState(null);
@@ -7,7 +8,7 @@ export default function SetupGuideView({ user }) {
   const isSuperAdmin = user?.role === 'superadmin' || user?.username === 'superadmin';
 
   const copyText = (key, text) => {
-    navigator.clipboard.writeText(text);
+    copyToClipboard(text);
     setCopied(key);
     setTimeout(() => setCopied(null), 2000);
   };

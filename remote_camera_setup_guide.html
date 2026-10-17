@@ -481,10 +481,32 @@ systemctl restart mediamtx</code>
 <script>
 function copyCode(btn) {
     const code = btn.nextElementSibling.innerText;
-    navigator.clipboard.writeText(code).then(() => {
+    function showCopied() {
         btn.innerText = 'Copied!';
         setTimeout(() => btn.innerText = 'Copy', 2000);
-    });
+    }
+
+    if (navigator?.clipboard?.writeText && window.isSecureContext) {
+        navigator.clipboard.writeText(code).then(showCopied).catch(fallback);
+    } else {
+        fallback();
+    }
+
+    function fallback() {
+        try {
+            const ta = document.createElement('textarea');
+            ta.value = code;
+            ta.style.position = 'fixed';
+            ta.style.left = '-9999px';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            showCopied();
+        } catch (e) {
+            console.error('Copy failed', e);
+        }
+    }
 }
 </script>
 

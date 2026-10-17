@@ -14,15 +14,11 @@ export default function CameraPlayer({ camera, isSingleView }) {
   const streamPath = key.startsWith('live/') ? key : `live/${key}`;
   const directHttpUrl = `http://${host}:${webrtcPort}/${streamPath}/`;
 
-  // Determine iframe source:
-  // If running on HTTPS (or non-localhost), use the HTTPS stream proxy to prevent Mixed Content blocking.
-  const isHttpsParent = typeof window !== 'undefined' && window.location.protocol === 'https:';
+  // Always use proxied player URL:
+  // - For active cameras: plays WebRTC video feed immediately via direct signaling
+  // - For stopped/inactive cameras: renders clean Standby box with Channel, RTMP address & Retry button
   const backendBase = typeof window !== 'undefined' && window.location.pathname.includes('/app') ? '../backend/' : '/backend/';
-  const proxiedPlayerUrl = `${backendBase}stream_proxy.php?action=player&host=${encodeURIComponent(host)}&stream=${encodeURIComponent(key)}&webrtc_port=${webrtcPort}`;
-  
-  const iframeSrc = isHttpsParent 
-    ? proxiedPlayerUrl 
-    : `${directHttpUrl}?autoplay=1&muted=1&controls=1`;
+  const iframeSrc = `${backendBase}stream_proxy.php?action=player&host=${encodeURIComponent(host)}&stream=${encodeURIComponent(key)}&webrtc_port=${webrtcPort}`;
 
   const openPopout = () => {
     window.open(
